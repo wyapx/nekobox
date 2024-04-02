@@ -1,0 +1,29 @@
+[project]
+name = "lagrange-satori"
+version = "0.0.1"
+description = "A Satori backend powered by lagrange-python"
+authors = [
+    {name = "wyapx", email = "admin@nullcat.cn"},
+]
+dependencies = [
+    "satori-python-server>=0.11.0",
+    "lagrange-python @ git+https://github.com/LagrangeDev/lagrange-python@broken",
+]
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "AGPL"}
+
+[project.optional-dependencies]
+qrcode = ["qrcode"]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "satori-python>=0.11.1",
+]
