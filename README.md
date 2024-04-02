@@ -32,6 +32,10 @@ python main.py
    - [x] message-create
    - [x] message-delete `部分支持：群聊`
    - [x] message-get `部分支持：群聊`
+   - [x] guild-member-kick
+   - [x] guild-member-mute
+   - [x] guild-member-get
+   - [x] guild-list
 
 3. 事件
    - [x] message-created
