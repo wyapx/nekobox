@@ -1,1 +1,1 @@
-PLATFORM = "undefined"
+PLATFORM = "nekobox"

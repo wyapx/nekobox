@@ -1,6 +1,7 @@
 import asyncio
 from typing import List
 
+from loguru import logger
 from lagrange.client.client import Client
 from satori import Login, LoginStatus, User
 from satori.server import Provider, Event
@@ -16,6 +17,7 @@ class ServerProvider(Provider):
 
     def authenticate(self, token: str) -> bool:
         if token != self._token:
+            logger.warning("Authentication failed, check upstream token setting.")
             return False
         return True
 
