@@ -2,7 +2,7 @@ import struct
 
 from lagrange.client.client import Client
 
-from satori import transform, MessageObject, Channel, ChannelType, User
+from satori import transform, MessageObject, Channel, ChannelType, User, Guild
 from satori.parser import parse
 from satori.server import Request, route
 
@@ -66,6 +66,48 @@ async def guild_mute(client: Client, req: Request):
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
     else:
-        raise NotImplementedError(typ)
+        raise TypeError(typ)
 
     return [{"content": "ok"}]
+
+
+async def guild_kick(client: Client, req: Request):
+    typ, grp_id = decode_msgid(req.params["channel_id"])
+    user_id = int(req.params["user_id"])
+    permanent = bool(req.params["permanent"])
+
+    if typ == 1:
+        await client.kick_grp_member(grp_id, user_id, permanent)
+    else:
+        raise TypeError(typ)
+
+    return [{"content": "ok"}]
+
+
+async def guild_member_get(client: Client, req: Request):
+    typ, grp_id = decode_msgid(req.params["channel_id"])
+    user_id = int(req.params["user_id"])
+
+    if typ == 1:
+        return [{
+            "user": {
+                "id": str(user_id),
+                "avatar": f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={user_id}&spec=640"
+            },
+            "avatar": f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={user_id}&spec=640"
+        }]
+    else:
+        raise TypeError(typ)
+
+
+async def guild_get_list(client: Client, req: Request):
+    typ, grp_id = decode_msgid(req.params["channel_id"])
+
+    if typ == 1:
+        rsp = await client.get_grp_list()
+        return [
+            Guild(str(i.grp_id), i.info.grp_name, f"https://p.qlogo.cn/gh/{i.grp_id}/{i.grp_id}/640").dump()
+            for i in rsp.grp_list
+        ]
+    else:
+        raise TypeError(typ)
