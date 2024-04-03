@@ -23,6 +23,7 @@ from satori import (
     Image as SatoriImage,
     Audio as SatoriAudio,
     Message as SatoriMessage,
+    Link as SatoriLink,
 )
 
 if TYPE_CHECKING:
@@ -57,6 +58,7 @@ def decode_data_url(url: str) -> Tuple[str, bytes]:
 
 
 async def parse_resource(url: str) -> bytes:
+    logger.debug(f"loading resource: {url[:80]}")
     if url.startswith("http"):
         rsp = await HttpCat.request("GET", url)
         return rsp.decompressed_body
@@ -90,7 +92,7 @@ async def msg_to_satori(msgs: List[T]) -> List[SatoriElement]:
         elif isinstance(m, Text):
             new_msg.append(SatoriText(m.text))
         else:
-            logger.warning("cannot parse message to satori", repr(m)[:100])
+            logger.warning("cannot parse message to satori " + repr(m)[:100])
     return new_msg
 
 
@@ -116,6 +118,11 @@ async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0
                 raise AssertionError
         elif isinstance(m, SatoriText):
             new_msg.append(Text(m.text))
+        elif isinstance(m, SatoriLink):
+            new_msg.extend(
+                await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid)
+            )
+            new_msg.append(Text(f": {m.url}"))
         elif isinstance(m, (SatoriMessage, SatoriStyle)):
             if isinstance(m, SatoriBr):
                 new_msg.append(Text("\n"))
@@ -126,5 +133,5 @@ async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0
                 if isinstance(m, SatoriParagraph):
                     new_msg.append(Text("\n"))
         else:
-            logger.warning("cannot trans message to lag" + repr(m)[:100])
+            logger.warning("cannot trans message to lag " + repr(m)[:100])
     return new_msg
