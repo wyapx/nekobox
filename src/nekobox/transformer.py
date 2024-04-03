@@ -1,5 +1,7 @@
 import base64
+import sys
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import quote, unquote
 from typing import List, TYPE_CHECKING, Union, Tuple
 
@@ -8,6 +10,11 @@ from lagrange.client.message.types import T
 from lagrange.utils.httpcat import HttpCat
 
 from loguru import logger
+from satori.element import (
+    Style as SatoriStyle,
+    Br as SatoriBr,
+    Paragraph as SatoriParagraph,
+)
 from satori import (
     Element as SatoriElement,
     At as SatoriAt,
@@ -15,6 +22,7 @@ from satori import (
     Quote as SatoriQuote,
     Image as SatoriImage,
     Audio as SatoriAudio,
+    Message as SatoriMessage,
 )
 
 if TYPE_CHECKING:
@@ -55,6 +63,15 @@ async def parse_resource(url: str) -> bytes:
     elif url.startswith("data"):
         _, data = decode_data_url(url)
         return data
+    elif url.startswith("file://"):
+        if sys.platform == "win32":
+            path = Path(url[8:])
+        else:
+            path = Path(url[7:])
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path.absolute()}")
+        with open(path, "rb") as f:
+            return f.read()
     else:
         raise ValueError("Unsupported URL: %s" % url)
 
@@ -99,6 +116,15 @@ async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0
                 raise AssertionError
         elif isinstance(m, SatoriText):
             new_msg.append(Text(m.text))
+        elif isinstance(m, (SatoriMessage, SatoriStyle)):
+            if isinstance(m, SatoriBr):
+                new_msg.append(Text("\n"))
+            else:
+                new_msg.extend(
+                    await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid)
+                )
+                if isinstance(m, SatoriParagraph):
+                    new_msg.append(Text("\n"))
         else:
             logger.warning("cannot trans message to lag" + repr(m)[:100])
     return new_msg
