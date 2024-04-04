@@ -119,10 +119,9 @@ async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0
         elif isinstance(m, SatoriText):
             new_msg.append(Text(m.text))
         elif isinstance(m, SatoriLink):
-            new_msg.extend(
-                await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid)
-            )
-            new_msg.append(Text(f": {m.url}"))
+            parsed = await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid)
+            new_msg.extend(parsed)
+            new_msg.append(Text(f"{': ' if parsed else ''}{m.url}"))
         elif isinstance(m, (SatoriMessage, SatoriStyle)):
             if isinstance(m, SatoriBr):
                 new_msg.append(Text("\n"))
