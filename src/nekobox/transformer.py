@@ -7,7 +7,6 @@ from typing import List, TYPE_CHECKING, Union, Tuple
 
 from lagrange.client.message.elems import Text, Image, At, Audio, Quote
 from lagrange.client.message.types import T
-from lagrange.utils.httpcat import HttpCat
 
 from loguru import logger
 from satori.element import (
@@ -25,6 +24,7 @@ from satori import (
     Message as SatoriMessage,
     Link as SatoriLink,
 )
+from .utils import download_resource
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -60,8 +60,7 @@ def decode_data_url(url: str) -> Tuple[str, bytes]:
 async def parse_resource(url: str) -> bytes:
     logger.debug(f"loading resource: {url[:80]}")
     if url.startswith("http"):
-        rsp = await HttpCat.request("GET", url)
-        return rsp.decompressed_body
+        return await download_resource(url)
     elif url.startswith("data"):
         _, data = decode_data_url(url)
         return data
