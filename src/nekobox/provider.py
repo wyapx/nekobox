@@ -28,7 +28,7 @@ class ServerProvider(Provider):
             platform=PLATFORM,
             user=User(
                 str(self._client.uin),
-                nick=str(self._client.uin),
+                name=str(self._client.uin),
                 avatar=f"https://q1.qlogo.cn/g?b=qq&nk={self._client.uin}&s=640"
             )
         )]
