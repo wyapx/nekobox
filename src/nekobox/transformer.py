@@ -59,12 +59,12 @@ def decode_data_url(url: str) -> Tuple[str, bytes]:
 
 async def parse_resource(url: str) -> bytes:
     logger.debug(f"loading resource: {url[:80]}")
-    if url.startswith("http"):
+    if url.find("http") == 0:
         return await download_resource(url)
-    elif url.startswith("data"):
+    elif url.find("data") == 0:
         _, data = decode_data_url(url)
         return data
-    elif url.startswith("file://"):
+    elif url.find("file://") == 0:
         if sys.platform == "win32":
             path = Path(url[8:])
         else:
