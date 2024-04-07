@@ -62,13 +62,13 @@ class HttpCatProxies(HttpCat):
         return HttpResponse(int(code), status, header, b"", cookies)
 
     async def connect_http_proxy(self, url: str, conn_timeout=0):
-        address, path, ssl = self._parse_url(url)
+        address, path, with_ssl = self._parse_url(url)
         if conn_timeout:
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(*address, ssl=ssl), conn_timeout
+                asyncio.open_connection(*address, ssl=with_ssl), conn_timeout
             )
         else:
-            reader, writer = await asyncio.open_connection(*address, ssl=ssl)
+            reader, writer = await asyncio.open_connection(*address, ssl=with_ssl)
         addr = f"{self.host}:{self.port}"
         await self._request(addr, reader, writer, "CONNECT", addr, header=self.header, wait_rsp=False)
         rsp = await self._parse_proxy_response(reader)
@@ -91,7 +91,7 @@ class HttpCatProxies(HttpCat):
         if not (self._reader and self._writer):
             proxies = getproxies()
             if "http" in proxies:
-                await self.connect_http_proxy(proxies.get("http"))
+                await self.connect_http_proxy(proxies.get("http"), conn_timeout)
                 if self.ssl:
                     loop = asyncio.get_running_loop()
                     self._writer._protocol._over_ssl = True  # noqa, suppress warning
@@ -109,8 +109,8 @@ class HttpCatProxies(HttpCat):
 async def download_resource(url: str, retry=3, timeout=10) -> bytes:
     if retry > 0:
         try:
-            address, path, ssl = HttpCatProxies._parse_url(url)
-            async with HttpCatProxies(*address, ssl=ssl) as req:
+            address, path, with_ssl = HttpCatProxies._parse_url(url)
+            async with HttpCatProxies(*address, ssl=with_ssl) as req:
                 rsp = await req.send_request("GET", path, conn_timeout=timeout)
             length = int(rsp.header.get("Content-Length", 0))
             if length and length != len(rsp.body):
@@ -121,6 +121,10 @@ async def download_resource(url: str, retry=3, timeout=10) -> bytes:
                 return rsp.decompressed_body
         except (asyncio.TimeoutError, BufferError, ConnectionError) as e:
             logger.error(f"Request failed: {repr(e)}")
+        except ssl.SSLError as e:
+            # Suppress SSL Error
+            # like: [SSL: APPLICATION_DATA_AFTER_CLOSE_NOTIFY] application data after close notify (_ssl.c:2706)
+            logger.error(f"SSL error: {repr(e)}")
         return await download_resource(url, retry - 1, timeout=timeout)
     else:
         raise ConnectionError(f"Request failed after many tries")
