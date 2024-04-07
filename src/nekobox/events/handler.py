@@ -54,7 +54,7 @@ async def on_friend_msg(client: Client, event: FriendMessage) -> Optional[Event]
         datetime.fromtimestamp(event.timestamp),
         channel=Channel(encode_msgid(2, event.from_uin), ChannelType.DIRECT, event.from_uid),
         user=User(str(event.from_uin), event.from_uid, f"https://q1.qlogo.cn/g?b=qq&nk={event.from_uin}&s=640"),
-        message=MessageObject.from_elements(encode_msgid(2, event.seq), await msg_to_satori(event.msg_chain)),
+        message=MessageObject.from_elements(str(event.seq), await msg_to_satori(event.msg_chain)),
     )
 
 
