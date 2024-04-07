@@ -106,7 +106,7 @@ class HttpCatProxies(HttpCat):
         return await super().send_request(method, path, body, follow_redirect, conn_timeout)
 
 
-async def download_resource(url: str, retry=3, timeout=10) -> bytes:
+async def download_resource(url: str, retry=5, timeout=10) -> bytes:
     if retry > 0:
         try:
             address, path, with_ssl = HttpCatProxies._parse_url(url)
