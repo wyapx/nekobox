@@ -1,10 +1,16 @@
-import asyncio
+import os
 import ssl
 import sys
+import asyncio
+from io import BytesIO
+from shutil import which
+from typing import BinaryIO
 from urllib.request import getproxies
+from tempfile import TemporaryDirectory
 
 from loguru import logger
 from lagrange.utils.httpcat import HttpCat, HttpResponse
+from lagrange.utils.audio.decoder import decode
 
 try:
     from qrcode.main import QRCode as _QRCode
@@ -37,6 +43,11 @@ try:
 
 except ImportError:
     QRCode = None
+
+try:
+    from pysilk import async_encode_file
+except ImportError:
+    async_encode_file = None
 
 
 class HttpCatProxies(HttpCat):
@@ -128,3 +139,35 @@ async def download_resource(url: str, retry=5, timeout=10) -> bytes:
         return await download_resource(url, retry - 1, timeout=timeout)
     else:
         raise ConnectionError(f"Request failed after many tries")
+
+
+async def transform_audio(audio: BinaryIO) -> BinaryIO:
+    try:
+        typ = decode(audio)
+    except ValueError:
+        typ = None
+
+    if typ:
+        return audio
+    elif not typ and async_encode_file:
+        ffmpeg = which("ffmpeg")
+        if not ffmpeg:
+            raise RuntimeError("ffmpeg not found, transform fail")
+
+        with TemporaryDirectory() as temp_dir:
+            input_path = os.path.join(temp_dir, f"{os.urandom(16).hex()}.tmp")
+            with open(input_path, "wb") as f:
+                f.write(audio.read())
+
+            out_path = os.path.join(temp_dir, f"{os.urandom(16).hex()}.tmp")
+            proc = await asyncio.create_subprocess_exec(
+                ffmpeg, "-i", input_path, "-f", "s16le",
+                "-ar", "24000", "-ac", "1", "-y", out_path
+            )
+            if await proc.wait() != 0:
+                raise ProcessLookupError(proc.returncode)
+
+            data = await async_encode_file(out_path)
+        return BytesIO(data)
+    else:
+        raise RuntimeError("module 'pysilk-mod' not install, transform fail")

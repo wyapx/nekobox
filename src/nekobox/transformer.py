@@ -24,7 +24,7 @@ from satori import (
     Message as SatoriMessage,
     Link as SatoriLink,
 )
-from .utils import download_resource
+from .utils import download_resource, transform_audio
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -130,6 +130,20 @@ async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0
                 )
                 if isinstance(m, SatoriParagraph):
                     new_msg.append(Text("\n"))
+        elif isinstance(m, SatoriAudio):
+            data = await transform_audio(
+                BytesIO(await parse_resource(m.src))
+            )
+            if grp_id:
+                new_msg.append(
+                    await client.upload_grp_audio(data, grp_id)
+                )
+            elif uid:
+                new_msg.append(
+                    await client.upload_friend_audio(data, uid)
+                )
+            else:
+                raise AssertionError
         else:
             logger.warning("cannot trans message to lag " + repr(m)[:100])
     return new_msg

@@ -15,6 +15,7 @@ license = {text = "AGPL"}
 
 [project.optional-dependencies]
 qrcode = ["qrcode"]
+audio = ["pysilk-mod"]
 
 [build-system]
 requires = ["pdm-backend"]
