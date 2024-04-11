@@ -108,19 +108,21 @@ class NekoBoxService(Service):
                 else:
                     success = False
 
-                if not success:
-                    if not await self.qrlogin(client):
-                        logger.error("login error")
-                        return
-
-            im.save_all()
-
             patch_logging(self.log_level)
+            if not success:
+                if not await self.qrlogin(client):
+                    logger.error("login error")
+                else:
+                    success = True
+
             async with self.stage("blocking"):
-                await any_completed(
-                    manager.status.wait_for_sigexit(),
-                    client.wait_closed()
-                )
+                if success:
+                    im.save_all()
+                    await any_completed(
+                        manager.status.wait_for_sigexit(),
+                        client.wait_closed()
+                    )
 
             async with self.stage("cleanup"):
+                logger.warning("stopping client...")
                 await client.stop()

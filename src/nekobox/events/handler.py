@@ -81,10 +81,12 @@ async def on_client_online(client: Client, event: ClientOnline) -> Optional[Even
 
 
 async def on_client_offline(client: Client, event: ClientOffline) -> Optional[Event]:
-    logger.debug("login-updated: online")
+    logger.debug(
+        f"login-updated: {'reconnect' if event.recoverable else 'disconnect'}"
+    )
     return Event(
         0,
-        EventType.LOGIN_UPDATED if event.recoverable else EventType.LOGIN_REMOVED,
+        EventType.LOGIN_UPDATED,
         PLATFORM,
         str(client.uin),
         datetime.now(),
