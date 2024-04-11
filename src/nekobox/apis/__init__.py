@@ -12,6 +12,7 @@ from .handler import (
     guild_kick,
     guild_get_list,
     guild_member_get,
+    guild_member_list
 )
 
 __all__ = ["apply_api_handlers"]
@@ -24,6 +25,7 @@ ALL_APIS: List[Tuple[Api, API_HANDLER]] = [
     (Api.GUILD_MEMBER_MUTE, guild_mute),
     (Api.GUILD_LIST, guild_get_list),
     (Api.GUILD_MEMBER_GET, guild_member_get),
+    (Api.GUILD_MEMBER_LIST, guild_member_list),
 ]
 
 

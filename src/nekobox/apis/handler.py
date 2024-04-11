@@ -84,17 +84,39 @@ async def guild_kick(client: Client, req: Request):
     return [{"content": "ok"}]
 
 
+async def guild_member_list(client: Client, req: Request):
+    typ, grp_id = decode_msgid(req.params["channel_id"])
+
+    if typ == 1:
+        rsp = await client.get_grp_members(grp_id)
+        return [{
+            "user": {
+                "id": str(body.account.uin),
+                "name": body.nickname,
+                "avatar": f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={body.account.uin}&spec=640"
+            },
+            "nick": body.name,
+            "avatar": f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={body.account.uin}&spec=640",
+            "joined_at": body.joined_time
+        } for body in rsp.body]
+
+
 async def guild_member_get(client: Client, req: Request):
     typ, grp_id = decode_msgid(req.params["channel_id"])
     user_id = int(req.params["user_id"])
 
     if typ == 1:
+        rsp = (await client.get_grp_member_info(grp_id, resolve_uid(user_id))).body[0]
+
         return [{
             "user": {
                 "id": str(user_id),
+                "name": rsp.nickname,
                 "avatar": f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={user_id}&spec=640"
             },
-            "avatar": f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={user_id}&spec=640"
+            "nick": rsp.name,
+            "avatar": f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={user_id}&spec=640",
+            "joined_at": rsp.joined_time
         }]
     else:
         raise TypeError(typ)

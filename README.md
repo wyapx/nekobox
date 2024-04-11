@@ -38,6 +38,7 @@ python main.py
    - [x] guild-member-mute
    - [x] guild-member-get
    - [x] guild-list
+   - [x] guild-member-list
 
 3. 事件
    - [x] message-created
