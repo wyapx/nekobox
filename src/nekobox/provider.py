@@ -23,7 +23,7 @@ class ServerProvider(Provider):
 
     async def get_logins(self) -> List[Login]:
         return [Login(
-            LoginStatus.ONLINE,
+            LoginStatus.ONLINE if self._client.online else LoginStatus.CONNECT,
             self_id=str(self._client.uin),
             platform=PLATFORM,
             user=User(

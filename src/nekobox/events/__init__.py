@@ -1,11 +1,12 @@
 import asyncio
 
 from lagrange.client.client import Client
+from lagrange.client.events.service import ClientOnline, ClientOffline
 from lagrange.client.events.group import GroupMessage, GroupRecall
 from lagrange.client.events.friend import FriendMessage
 from satori import Event
 
-from .handler import on_grp_msg, on_friend_msg, on_grp_recall
+from .handler import on_grp_msg, on_friend_msg, on_grp_recall, on_client_online, on_client_offline
 from .utils import event_register
 
 
@@ -14,6 +15,8 @@ ALL_EVENT_HANDLERS = [
     (GroupMessage, on_grp_msg),
     (FriendMessage, on_friend_msg),
     (GroupRecall, on_grp_recall),
+    (ClientOnline, on_client_online),
+    (ClientOffline, on_client_offline),
 ]
 
 

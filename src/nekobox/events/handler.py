@@ -2,8 +2,9 @@ from datetime import datetime
 from typing import Optional
 
 from loguru import logger
-from satori import EventType, Event, Channel, ChannelType, Guild, User, MessageObject
+from satori import EventType, Event, Channel, ChannelType, Guild, User, MessageObject, Login, LoginStatus
 from lagrange.client.client import Client
+from lagrange.client.events.service import ClientOnline, ClientOffline
 from lagrange.client.events.group import GroupMessage, GroupRecall
 from lagrange.client.events.friend import FriendMessage
 
@@ -55,6 +56,48 @@ async def on_friend_msg(client: Client, event: FriendMessage) -> Optional[Event]
         channel=Channel(encode_msgid(2, event.from_uin), ChannelType.DIRECT, event.from_uid),
         user=User(str(event.from_uin), event.from_uid, f"https://q1.qlogo.cn/g?b=qq&nk={event.from_uin}&s=640"),
         message=MessageObject.from_elements(str(event.seq), await msg_to_satori(event.msg_chain)),
+    )
+
+
+async def on_client_online(client: Client, event: ClientOnline) -> Optional[Event]:
+    logger.debug("login-updated: online")
+    return Event(
+        0,
+        EventType.LOGIN_UPDATED,
+        PLATFORM,
+        str(client.uin),
+        datetime.now(),
+        login=Login(
+            LoginStatus.ONLINE,
+            self_id=str(client.uin),
+            platform=PLATFORM,
+            user=User(
+                str(client.uin),
+                name=str(client.uin),
+                avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
+            )
+        )
+    )
+
+
+async def on_client_offline(client: Client, event: ClientOffline) -> Optional[Event]:
+    logger.debug("login-updated: online")
+    return Event(
+        0,
+        EventType.LOGIN_UPDATED if event.recoverable else EventType.LOGIN_REMOVED,
+        PLATFORM,
+        str(client.uin),
+        datetime.now(),
+        login=Login(
+            LoginStatus.RECONNECT if event.recoverable else LoginStatus.DISCONNECT,
+            self_id=str(client.uin),
+            platform=PLATFORM,
+            user=User(
+                str(client.uin),
+                name=str(client.uin),
+                avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
+            )
+        )
     )
 
 
