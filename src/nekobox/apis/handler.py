@@ -1,6 +1,8 @@
 import struct
+from typing import List
 
 from lagrange.client.client import Client
+from lagrange.pb.service.group import GetGrpMemberInfoRspBody
 
 from satori import transform, MessageObject, Channel, ChannelType, User, Guild
 from satori.parser import parse
@@ -88,7 +90,15 @@ async def guild_member_list(client: Client, req: Request):
     typ, grp_id = decode_msgid(req.params["channel_id"])
 
     if typ == 1:
-        rsp = await client.get_grp_members(grp_id)
+        result: List[GetGrpMemberInfoRspBody] = []
+        next_key = None
+        while True:
+            rsp = await client.get_grp_members(grp_id, next_key=next_key)
+            result.extend(rsp.body)
+            if rsp.next_key:
+                next_key = rsp.next_key
+            else:
+                break
         return [{
             "user": {
                 "id": str(body.account.uin),
