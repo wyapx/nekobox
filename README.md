@@ -43,5 +43,7 @@ python main.py
 3. 事件
    - [x] message-created
    - [x] message-deleted  `部分支持：群聊`
+   - [x] guild-member-added
+   - [x] guild-member-removed
 
 由于大多数事件和操作没有标准参考，特性的新增可能需要一些时间.

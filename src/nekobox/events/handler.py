@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from loguru import logger
-from satori import EventType, Event, Channel, ChannelType, Guild, User, MessageObject, Login, LoginStatus
+from satori import EventType, Event, Channel, ChannelType, Guild, User, MessageObject, Login, LoginStatus, Member
 from lagrange.client.client import Client
 from lagrange.client.events.service import ClientOnline, ClientOffline
-from lagrange.client.events.group import GroupMessage, GroupRecall
+from lagrange.client.events.group import GroupMessage, GroupRecall, GroupMemberJoined, GroupMemberQuit
 from lagrange.client.events.friend import FriendMessage
 
 from nekobox.uid import save_uid, resolve_uin
@@ -100,6 +100,55 @@ async def on_client_offline(client: Client, event: ClientOffline) -> Optional[Ev
                 avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
             )
         )
+    )
+
+
+async def on_member_joined(client: Client, event: GroupMemberJoined) -> Event:
+    rsp = (await client.get_grp_member_info(event.grp_id, event.uid)).body[0]
+    nickname = rsp.name.string if rsp.name else None
+    user = User(
+        str(event.uin),
+        str(rsp.nickname),
+        nickname,
+        avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640"
+    )
+    return Event(
+        0,
+        EventType.GUILD_MEMBER_ADDED,
+        PLATFORM,
+        str(client.uin),
+        datetime.now(),
+        guild=Guild(str(event.grp_id), str(event.grp_id), f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"),
+        member=Member(
+            user,
+            user.nick,
+            user.name,
+            avatar=user.avatar,
+            joined_at=datetime.fromtimestamp(rsp.joined_time)
+        ),
+        user=user
+    )
+
+
+async def on_member_quit(client: Client, event: GroupMemberQuit) -> Optional[Event]:
+    user = User(
+        str(event.uin),
+        avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640"
+    )
+    return Event(
+        0,
+        EventType.GUILD_MEMBER_REMOVED,
+        PLATFORM,
+        str(client.uin),
+        datetime.now(),
+        guild=Guild(str(event.grp_id), str(event.grp_id), f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"),
+        member=Member(
+            user,
+            user.nick,
+            user.name,
+            avatar=user.avatar
+        ),
+        user=user
     )
 
 
