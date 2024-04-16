@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import quote, unquote
 from typing import List, TYPE_CHECKING, Union, Tuple
 
-from lagrange.client.message.elems import Text, Image, At, Audio, Quote
+from lagrange.client.message.elems import Text, Image, At, Audio, Quote, MarketFace
 from lagrange.client.message.types import T
 
 from loguru import logger
@@ -84,7 +84,7 @@ async def msg_to_satori(msgs: List[T]) -> List[SatoriElement]:
             new_msg.append(SatoriAt(str(m.uin), m.text))
         elif isinstance(m, Quote):
             new_msg.append(SatoriQuote(str(m.seq), False))
-        elif isinstance(m, Image):
+        elif isinstance(m, (Image, MarketFace)):
             new_msg.append(SatoriImage(str(m.url), width=m.width, height=m.height))
         elif isinstance(m, Audio):
             new_msg.append(SatoriAudio(m.name))

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 
 from loguru import logger
 from satori import EventType, Event, Channel, ChannelType, Guild, User, MessageObject, Login, LoginStatus, Member
