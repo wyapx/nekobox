@@ -25,7 +25,7 @@ async def on_grp_msg(client: Client, event: GroupMessage) -> Optional[Event]:
         datetime.fromtimestamp(event.time),
         channel=Channel(encode_msgid(1, event.grp_id), ChannelType.TEXT, event.grp_name),
         guild=Guild(str(event.grp_id), event.grp_name),
-        user=User(str(event.uin), event.nickname, f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640"),
+        user=User(str(event.uin), event.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640"),
         message=MessageObject.from_elements(str(event.seq), await msg_to_satori(event.msg_chain)),
     )
 
@@ -39,7 +39,7 @@ async def on_grp_recall(client: Client, event: GroupRecall) -> Optional[Event]:
         str(client.uin),
         datetime.fromtimestamp(event.time),
         channel=Channel(encode_msgid(1, event.grp_id), ChannelType.TEXT),
-        user=User(str(uin), str(uin), f"https://q1.qlogo.cn/g?b=qq&nk={uin}&s=640"),
+        user=User(str(uin), str(uin), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={uin}&s=640"),
         message=MessageObject(str(event.seq), event.suffix)
     )
 

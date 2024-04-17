@@ -39,6 +39,8 @@ python main.py
    - [x] guild-member-get
    - [x] guild-list
    - [x] guild-member-list
+   - [x] channel-list
+   - [x] login-get
 
 3. 事件
    - [x] message-created

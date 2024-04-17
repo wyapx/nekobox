@@ -1,17 +1,38 @@
-import struct
 from datetime import datetime
-from typing import List
 
 from lagrange.client.client import Client
-from lagrange.pb.service.group import GetGrpMemberInfoRspBody
 
-from satori import transform, MessageObject, Channel, ChannelType, User, Guild, Member
+from satori import transform, MessageObject, Channel, ChannelType, User, Guild, Member, Login, LoginStatus
 from satori.parser import parse
 from satori.server import Request, route
 
+from nekobox.consts import PLATFORM
 from nekobox.uid import resolve_uid
 from nekobox.transformer import satori_to_msg, msg_to_satori
 from nekobox.msgid import decode_msgid, encode_msgid
+
+
+async def login_get(client: Client, _request: Request[route.Login]):
+    return Login(
+        LoginStatus.ONLINE if client.online.is_set() else LoginStatus.OFFLINE,
+        self_id=str(client.uin),
+        platform=PLATFORM,
+        user=User(
+            str(client.uin),
+            name=str(client.uin),
+            avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
+        )
+    ).dump()
+
+
+async def channel_list(client: Client, request: Request):
+    guild_id = int(request.params["guild_id"])
+    # _next = request.params.get("next")
+    return {
+        "data": [
+            Channel(encode_msgid(1, guild_id), ChannelType.TEXT).dump()
+        ]
+    }
 
 
 async def msg_create(client: Client, req: Request[route.MessageParam]):
