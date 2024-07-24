@@ -1,86 +1,16 @@
-import asyncio
 import os
-import secrets
 
-from configparser import ConfigParser
-from creart import it
-from launart import Launart
+from nekobox import NekoBoxAdapter
 from satori.server import Server
 
-from nekobox.log import loguru_exc_callback_async
-from nekobox.service import NekoBoxService
-
-
-CONFIG_FILE = 'nekobox.ini'
-
-
-def run(uin: int, host: str, port: int, token: str, protocol: str, sign_url: str, level: str):
-    manager = it(Launart)
-    loop = it(asyncio.AbstractEventLoop)
-    loop.set_exception_handler(loguru_exc_callback_async)
-    server = Server(host=host, port=port)
-    manager.add_component(
-        NekoBoxService(
-            server,
-            uin,
-            token,
-            sign_url,
-            protocol,  # type: ignore
-            level
-        )
+server = Server(host="localhost", port=7777)
+server.apply(
+    NekoBoxAdapter(
+        int(os.environ.get("LAGRANGE_UIN", "0")),
+        "fa1ccfd6a9fcac523f3af2f67575e54230b1aef5df69a6886a3bae140e39a13b",
+        os.environ.get("LAGRANGE_SIGN_URL", ""),
+        "linux",
+        "DEBUG"
     )
-
-    server.run(manager)
-
-
-def set_cfg(cfg: ConfigParser, section: str, option: str, description: str, default: str = None, unique=None):
-    if not unique:
-        unique = []
-    try:
-        i = str(input(f"{description}{f'[{default}]' if default else '*'}: "))
-        if not i and not default:
-            raise ValueError
-        elif i and unique and i not in unique:
-            raise ValueError
-    except (TypeError, ValueError):
-        print(f"ERR: 输入不符合约束 {unique}")
-        return set_cfg(cfg, section, option, description, default, unique)
-    cfg.set(section, option, i or default)
-
-
-def generate_cfg():
-    cfg = ConfigParser()
-    print("正在生成配置文件")
-    cfg.add_section("Core")
-    set_cfg(cfg, "Core", "uin", "Bot的QQ号")
-    set_cfg(cfg, "Core", "sign", "Bot的Sign服务器地址(HTTP)")
-    set_cfg(cfg, "Core", "protocol", "Bot的协议类型", default="linux", unique=["linux", "macos", "windows"])
-    set_cfg(cfg, "Core", "token", "Satori的验证token（不输入则随机生成）", default=secrets.token_hex(8))
-    set_cfg(cfg, "Core", "host", "Satori服务器绑定地址", default="127.0.0.1")
-    set_cfg(cfg, "Core", "port", "Satori服务器绑定端口", default="7777")
-    set_cfg(cfg, "Core", "log_level", "默认日志等级", default="INFO", unique=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
-
-    with open(CONFIG_FILE, "w") as f:
-        cfg.write(f)
-    print("配置文件已保存")
-
-
-def main():
-    if not os.path.isfile(CONFIG_FILE):
-        print("配置文件不存在")
-        generate_cfg()
-    cfg = ConfigParser()
-    cfg.read(CONFIG_FILE)
-    print("读取配置文件完成")
-    uin = int(cfg["Core"]["uin"])
-    host = cfg["Core"]["host"]
-    port = int(cfg["Core"]["port"])
-    token = cfg["Core"]["token"]
-    sign_url = cfg["Core"]["sign"]
-    protocol = cfg["Core"]["protocol"]
-    level = cfg["Core"]["log_level"]
-    run(uin, host, port, token, protocol, sign_url, level)
-
-
-if __name__ == '__main__':
-    main()
+)
+server.run()

@@ -8,15 +8,17 @@ from lagrange.client.events.service import ClientOnline, ClientOffline
 from lagrange.client.events.group import GroupMessage, GroupRecall, GroupMemberJoined, GroupMemberQuit
 from lagrange.client.events.friend import FriendMessage
 
-from nekobox.uid import save_uid, resolve_uin
-from nekobox.msgid import encode_msgid
-from nekobox.consts import PLATFORM
-from nekobox.transformer import msg_to_satori
+from ..uid import save_uid, resolve_uin
+from ..msgid import encode_msgid
+from ..consts import PLATFORM
+from ..transformer import msg_to_satori
 
 
 async def on_grp_msg(client: Client, event: GroupMessage) -> Optional[Event]:
     save_uid(event.uin, event.uid)
-    logger.info(f"{event.grp_name}[{event.nickname}]: {event.msg}")
+    content = await msg_to_satori(event.msg_chain)
+    msg = "".join(str(i) for i in content)
+    logger.info(f"{event.grp_name}[{event.nickname}]: {msg!r}")
     return Event(
         0,
         EventType.MESSAGE_CREATED,
@@ -31,7 +33,7 @@ async def on_grp_msg(client: Client, event: GroupMessage) -> Optional[Event]:
             avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640",
             is_bot=event.is_bot
         ),
-        message=MessageObject.from_elements(str(event.seq), await msg_to_satori(event.msg_chain)),
+        message=MessageObject.from_elements(str(event.seq), content),
     )
 
 
@@ -51,7 +53,9 @@ async def on_grp_recall(client: Client, event: GroupRecall) -> Optional[Event]:
 
 async def on_friend_msg(client: Client, event: FriendMessage) -> Optional[Event]:
     save_uid(event.from_uin, event.from_uid)
-    logger.info(f"{event.from_uin}[{event.from_uid}]: {event.msg}")
+    content = await msg_to_satori(event.msg_chain)
+    msg = "".join(str(i) for i in content)
+    logger.info(f"{event.from_uin}[{event.from_uid}]: {msg!r}")
     return Event(
         0,
         EventType.MESSAGE_CREATED,
@@ -60,7 +64,7 @@ async def on_friend_msg(client: Client, event: FriendMessage) -> Optional[Event]
         datetime.fromtimestamp(event.timestamp),
         channel=Channel(encode_msgid(2, event.from_uin), ChannelType.DIRECT, event.from_uid),
         user=User(str(event.from_uin), event.from_uid, f"https://q1.qlogo.cn/g?b=qq&nk={event.from_uin}&s=640"),
-        message=MessageObject.from_elements(str(event.seq), await msg_to_satori(event.msg_chain)),
+        message=MessageObject.from_elements(str(event.seq), content),
     )
 
 
@@ -126,8 +130,7 @@ async def on_member_joined(client: Client, event: GroupMemberJoined) -> Event:
         guild=Guild(str(event.grp_id), str(event.grp_id), f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"),
         member=Member(
             user,
-            user.nick,
-            user.name,
+            user.nick or user.name,
             avatar=user.avatar,
             joined_at=datetime.fromtimestamp(rsp.joined_time)
         ),
@@ -149,8 +152,7 @@ async def on_member_quit(client: Client, event: GroupMemberQuit) -> Optional[Eve
         guild=Guild(str(event.grp_id), str(event.grp_id), f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"),
         member=Member(
             user,
-            user.nick,
-            user.name,
+            user.nick or user.name,
             avatar=user.avatar
         ),
         user=user

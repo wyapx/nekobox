@@ -6,10 +6,10 @@ from satori import transform, MessageObject, Channel, ChannelType, User, Guild, 
 from satori.parser import parse
 from satori.server import Request, route
 
-from nekobox.consts import PLATFORM
-from nekobox.uid import resolve_uid
-from nekobox.transformer import satori_to_msg, msg_to_satori
-from nekobox.msgid import decode_msgid, encode_msgid
+from ..consts import PLATFORM
+from ..uid import resolve_uid
+from ..transformer import satori_to_msg, msg_to_satori
+from ..msgid import decode_msgid, encode_msgid
 
 
 async def login_get(client: Client, _request: Request[route.Login]):
@@ -25,7 +25,7 @@ async def login_get(client: Client, _request: Request[route.Login]):
     ).dump()
 
 
-async def channel_list(client: Client, request: Request):
+async def channel_list(client: Client, request: Request[route.ChannelListParam]):
     guild_id = int(request.params["guild_id"])
     # _next = request.params.get("next")
     return {
@@ -53,7 +53,7 @@ async def msg_create(client: Client, req: Request[route.MessageParam]):
     return [MessageObject.from_elements(str(rsp), tp)]
 
 
-async def msg_delete(client: Client, req: Request):
+async def msg_delete(client: Client, req: Request[route.MessageOpParam]):
     typ, grp_id = decode_msgid(req.params["channel_id"])
     seq = int(req.params["message_id"])
     if typ == 1:
@@ -64,7 +64,7 @@ async def msg_delete(client: Client, req: Request):
     return [{"id": str(rsp), "content": "ok"}]
 
 
-async def msg_get(client: Client, req: Request):
+async def msg_get(client: Client, req: Request[route.MessageOpParam]):
     typ, grp_id = decode_msgid(req.params["channel_id"])
     seq = int(req.params["message_id"])
     if typ == 1:
@@ -80,29 +80,27 @@ async def msg_get(client: Client, req: Request):
     )
 
 
-async def guild_mute(client: Client, req: Request):
+async def guild_member_kick(client: Client, req: Request[route.GuildMemberKickParam]):
     grp_id = int(req.params["guild_id"])
     user_id = int(req.params["user_id"])
-    duration = int(req.params["duration"]) * 1000  # ms to s
-
-    rsp = await client.set_mute_member(grp_id, user_id, duration)
-    if rsp.ret_code:
-        raise AssertionError(rsp.ret_code, rsp.err_msg)
-
-    return [{"content": "ok"}]
-
-
-async def guild_kick(client: Client, req: Request):
-    grp_id = int(req.params["guild_id"])
-    user_id = int(req.params["user_id"])
-    permanent = bool(req.params["permanent"])
+    permanent = req.params.get("permanent", False)
 
     await client.kick_grp_member(grp_id, user_id, permanent)
 
     return [{"content": "ok"}]
 
 
-async def guild_member_list(client: Client, req: Request):
+async def guild_member_mute(client: Client, req: Request[route.GuildMemberMuteParam]):
+    grp_id = int(req.params["guild_id"])
+    user_id = int(req.params["user_id"])
+    duration = int(req.params["duration"]) * 1000  # ms to s
+
+    await client.set_mute_member(grp_id, user_id, duration)
+
+    return [{"content": "ok"}]
+
+
+async def guild_member_list(client: Client, req: Request[route.GuildXXXListParam]):
     grp_id = int(req.params["guild_id"])
     next_key = req.params.get("next")
 
@@ -127,7 +125,7 @@ async def guild_member_list(client: Client, req: Request):
     }
 
 
-async def guild_member_get(client: Client, req: Request):
+async def guild_member_get(client: Client, req: Request[route.GuildMemberGetParam]):
     grp_id = int(req.params["guild_id"])
     user_id = int(req.params["user_id"])
 
@@ -147,7 +145,7 @@ async def guild_member_get(client: Client, req: Request):
     ]
 
 
-async def guild_get_list(client: Client, req: Request):
+async def guild_get_list(client: Client, req: Request[route.GuildListParam]):
     _next_key = req.params.get("next")
 
     rsp = await client.get_grp_list()

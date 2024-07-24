@@ -4,18 +4,21 @@ version = "0.0.1"
 description = "A Satori backend powered by lagrange-python"
 authors = [
     {name = "wyapx", email = "admin@nullcat.cn"},
+    {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"}
 ]
 dependencies = [
-    "satori-python-server>=0.11.0",
-    "lagrange-python @ git+https://github.com/LagrangeDev/lagrange-python@broken",
+    "satori-python-server>=0.13.2",
+    "lagrange-python @ git+https://github.com/RF-Tar-Railt/lagrange-python@broken",
 ]
 requires-python = ">=3.9"
 readme = "README.md"
 license = {text = "AGPL"}
 
 [project.optional-dependencies]
-qrcode = ["qrcode"]
 audio = ["pysilk-mod"]
+
+[project.scripts]
+nekobox = "nekobox.__main__:main"
 
 [build-system]
 requires = ["pdm-backend"]
@@ -26,5 +29,6 @@ distribution = true
 
 [tool.pdm.dev-dependencies]
 dev = [
-    "satori-python>=0.11.1",
+    "satori-python>=0.13.2",
+    "pysilk-mod"
 ]

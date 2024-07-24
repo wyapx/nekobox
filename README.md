@@ -1,6 +1,7 @@
 # NekoBox  
 
-基于lagrange-python的satori协议实现
+基于 [`lagrange-python`](https://github.com/LagrangeDev/lagrange-python) 的
+[`Satori协议`](https://satori.js.org/zh-CN) 实现，使用 [`satori-python`](https://github.com/RF-Tar-Railt/satori-python)
 
 
 ## 如何启动
@@ -12,13 +13,11 @@ cd nekobox
 
 python -m pip install .
 
-# 可选依赖，用于控制台渲染登录二维码
-python -m pip install qrcode
 # 可选依赖，用于支持非silk格式audio发送
 python -m pip install pysilk-mod
 
 # 跟随步骤生成配置文件后，使用手Q扫码即可登录
-python main.py
+python -m nekobox
 ```
 
 ## 特性支持情况

@@ -6,7 +6,7 @@ from urllib.parse import quote, unquote
 from typing import List, TYPE_CHECKING, Union, Tuple
 
 from lagrange.client.message.elems import Text, Image, At, Audio, Quote, MarketFace
-from lagrange.client.message.types import T
+from lagrange.client.message.types import Element
 
 from loguru import logger
 from satori.element import (
@@ -77,7 +77,7 @@ async def parse_resource(url: str) -> bytes:
         raise ValueError("Unsupported URL: %s" % url)
 
 
-async def msg_to_satori(msgs: List[T]) -> List[SatoriElement]:
+async def msg_to_satori(msgs: List[Element]) -> List[SatoriElement]:
     new_msg: List[SatoriElement] = []
     for m in msgs:
         if isinstance(m, At):
@@ -95,13 +95,13 @@ async def msg_to_satori(msgs: List[T]) -> List[SatoriElement]:
     return new_msg
 
 
-async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0, uid="") -> List[T]:
-    new_msg: List[T] = []
+async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0, uid="") -> List[Element]:
+    new_msg: List[Element] = []
     for m in msgs:
         if isinstance(m, SatoriAt):
-            new_msg.append(At(f"@{m.name}", int(m.id), ""))
+            new_msg.append(At(f"@{m.name}", int(m.id or 0), ""))
         elif isinstance(m, SatoriQuote):
-            target = await client.get_grp_msg(grp_id, int(m.id))
+            target = await client.get_grp_msg(grp_id, int(m.id or 0))
             new_msg.append(Quote.build(target[0]))
         elif isinstance(m, SatoriImage):
             data = await parse_resource(m.src)

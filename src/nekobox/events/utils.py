@@ -7,16 +7,16 @@ from lagrange.client.events import BaseEvent
 from satori import EventType
 from satori.server import Event
 
-T = TypeVar('T')
+TEvent = TypeVar('TEvent', bound=BaseEvent)
 
 
 def event_register(
-        client: Client,
-        queue: asyncio.Queue[Event],
-        event_type: Type[T],
-        handler: Callable[["Client", T], Coroutine[None, None, Optional[Event]]]
+    client: Client,
+    queue: asyncio.Queue[Event],
+    event_type: Type[TEvent],
+    handler: Callable[["Client", TEvent], Coroutine[None, None, Optional[Event]]]
 ):
-    async def _after_handle(_client: Client, event: BaseEvent):
+    async def _after_handle(_client: Client, event: TEvent):
         ev = await handler(_client, event)
         if ev:
             if ev.type != EventType.MESSAGE_CREATED:

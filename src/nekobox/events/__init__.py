@@ -30,9 +30,6 @@ ALL_EVENT_HANDLERS = [
 ]
 
 
-def apply_event_handler(
-        client: Client,
-        queue: asyncio.Queue[Event],
-):
+def apply_event_handler(client: Client, queue: asyncio.Queue[Event]):
     for event, ev_handler in ALL_EVENT_HANDLERS:
         event_register(client, queue, event, ev_handler)

@@ -5,7 +5,7 @@ uid_dict: Dict[int, str] = {}
 
 def resolve_uid(uin: int) -> str:
     if uin in uid_dict:
-        return uid_dict.get(uin)
+        return uid_dict[uin]
     raise ValueError(f"uin {uin} not in uid_dict")
 
 
