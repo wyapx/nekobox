@@ -432,7 +432,7 @@ version = "0.0.2"
 requires_python = ">=3.9"
 git = "https://github.com/RF-Tar-Railt/lagrange-python"
 ref = "broken"
-revision = "fb42beef6545ef98b4f0495a2ed6dc2c807d0637"
+revision = "6310e1d09f239fdb9e5c98ba27e37abe86171df1"
 summary = "An Python Implementation of NTQQ PC Protocol"
 dependencies = [
     "cryptography>=40.0.0",

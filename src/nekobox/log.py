@@ -4,7 +4,7 @@ import traceback
 from types import TracebackType
 from typing import Optional
 
-from lagrange.utils.log import log
+from lagrange.utils.log import log, install_loguru
 from loguru import logger
 
 
@@ -83,3 +83,6 @@ def patch_logging(level="INFO"):
         diagnose=True,
         colorize=False,
     )
+
+
+install_loguru()
