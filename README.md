@@ -17,8 +17,25 @@ python -m pip install .
 python -m pip install pysilk-mod
 
 # 跟随步骤生成配置文件后，使用手Q扫码即可登录
-python -m nekobox
+python -m nekobox run
 ```
+
+使用 `PDM`:
+
+```shell
+# 安装环境
+git clone https://github.com/wyapx/nekobox
+cd nekobox
+
+pdm install
+
+# 可选依赖，用于支持非silk格式audio发送
+pdm sync --group audio
+
+# 跟随步骤生成配置文件后，使用手Q扫码即可登录
+pdm run nekobox run
+```
+
 
 ## 特性支持情况
 
