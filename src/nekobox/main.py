@@ -4,10 +4,12 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import List, Set, Literal
 from pathlib import Path
+from contextlib import suppress
 
 from launart import Launart, any_completed
 from loguru import logger
 from qrcode.main import QRCode
+from graia.amnesia.builtins.memcache import MemcacheService
 
 from satori import Login, LoginStatus, User
 from satori.server import Adapter
@@ -24,6 +26,11 @@ from .consts import PLATFORM
 
 
 class NekoBoxAdapter(Adapter):
+    def ensure_manager(self, manager: Launart):
+        super().ensure_manager(manager)
+        with suppress(ValueError):
+            manager.add_component(MemcacheService())
+
     def get_platform(self) -> str:
         return PLATFORM
 

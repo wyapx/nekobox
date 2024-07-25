@@ -46,6 +46,7 @@ async def on_grp_recall(client: Client, event: GroupRecall) -> Optional[Event]:
         str(client.uin),
         datetime.fromtimestamp(event.time),
         channel=Channel(encode_msgid(1, event.grp_id), ChannelType.TEXT),
+        guild=Guild(str(event.grp_id)),
         user=User(str(uin), str(uin), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={uin}&s=640"),
         message=MessageObject(str(event.seq), event.suffix)
     )

@@ -1,8 +1,11 @@
 from datetime import datetime
 
 from lagrange.client.client import Client
+from graia.amnesia.builtins.memcache import MemcacheService
+from datetime import timedelta
+from launart import Launart
 
-from satori import transform, MessageObject, Channel, ChannelType, User, Guild, Member, Login, LoginStatus
+from satori import transform, MessageObject, Channel, ChannelType, User, Guild, Member, Login, LoginStatus, PageResult
 from satori.parser import parse
 from satori.server import Request, route
 
@@ -27,10 +30,13 @@ async def login_get(client: Client, _request: Request[route.Login]):
 
 async def channel_list(client: Client, request: Request[route.ChannelListParam]):
     guild_id = int(request.params["guild_id"])
+    guilds = await guild_get_list(client, request)  # type: ignore
+
     # _next = request.params.get("next")
+    guild = next((i for i in guilds.data if i.id == str(guild_id)), None)
     return {
         "data": [
-            Channel(encode_msgid(1, guild_id), ChannelType.TEXT).dump()
+            Channel(encode_msgid(1, guild_id), ChannelType.TEXT, guild.name if guild else None).dump()
         ]
     }
 
@@ -145,16 +151,19 @@ async def guild_member_get(client: Client, req: Request[route.GuildMemberGetPara
     ]
 
 
-async def guild_get_list(client: Client, req: Request[route.GuildListParam]):
+async def guild_get_list(client: Client, req: Request[route.GuildListParam]) -> PageResult[Guild]:
     _next_key = req.params.get("next")
+    cache = Launart.current().get_component(MemcacheService).cache
+
+    if data := await cache.get("guild_list"):
+        return PageResult(data, None)
 
     rsp = await client.get_grp_list()
     data = [
-        Guild(str(i.grp_id), i.info.grp_name, f"https://p.qlogo.cn/gh/{i.grp_id}/{i.grp_id}/640").dump()
+        Guild(str(i.grp_id), i.info.grp_name, f"https://p.qlogo.cn/gh/{i.grp_id}/{i.grp_id}/640")
         for i in rsp.grp_list
     ]
 
-    return {
-        "data": data,
-        "next": None,
-    }
+    await cache.set("guild_list", data, timedelta(minutes=5))
+
+    return PageResult(data, None)

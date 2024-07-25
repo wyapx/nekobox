@@ -36,6 +36,25 @@ pdm sync --group audio
 pdm run nekobox run
 ```
 
+## CLI 工具
+
+```shell
+$ nekobox
+usage: nekobox [-h] {run,gen,clear,default} ...
+
+NekoBox/lagrange-python-satori Server 工具
+
+options:
+  -h, --help            show this help message and exit
+
+commands:
+  {run,gen,clear,default}
+    run                 启动服务器
+    gen                 生成配置文件
+    clear               清除数据
+    default             设置默认账号
+```
+
 
 ## 特性支持情况
 
