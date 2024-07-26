@@ -1,6 +1,6 @@
-from lagrange.client.client import Client
 from satori import Api
-from satori.server import Request, Adapter
+from lagrange.client.client import Client
+from satori.server import Adapter, Request
 
 from .types import API_HANDLER
 

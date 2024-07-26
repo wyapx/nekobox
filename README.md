@@ -60,7 +60,7 @@ commands:
 
 1. 消息类型  
    - [x] Text
-   - [x] At
+   - [x] At, AtAll
    - [x] Image
    - [x] Quote
    - [x] Audio
@@ -72,15 +72,19 @@ commands:
    - [x] guild-member-kick
    - [x] guild-member-mute
    - [x] guild-member-get
-   - [x] guild-list
    - [x] guild-member-list
+   - [x] guild-list
    - [x] channel-list
    - [x] login-get
+   - [x] user-channel-create `用于向 user 发起私聊 (前提是好友)`
+   - [x] guild-member-approve
 
 3. 事件
    - [x] message-created
    - [x] message-deleted  `部分支持：群聊`
    - [x] guild-member-added
    - [x] guild-member-removed
+   - [x] guild-updated  `群名更改`
+   - [x] guild-member-request
 
 由于大多数事件和操作没有标准参考，特性的新增可能需要一些时间.

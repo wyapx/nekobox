@@ -1,20 +1,23 @@
-from typing import Tuple, List
+from typing import List, Tuple
 
-from lagrange.client.client import Client
 from satori.server import Api, Adapter
-from .utils import register_api
+from lagrange.client.client import Client
+
 from .types import API_HANDLER
+from .utils import register_api
 from .handler import (
+    msg_get,
+    login_get,
     msg_create,
     msg_delete,
-    msg_get,
-    guild_member_kick,
-    guild_member_mute,
+    channel_list,
+    friend_channel,
     guild_get_list,
     guild_member_get,
+    guild_member_kick,
     guild_member_list,
-    login_get,
-    channel_list,
+    guild_member_mute,
+    guild_member_req_approve,
 )
 
 __all__ = ["apply_api_handlers"]
@@ -30,6 +33,8 @@ ALL_APIS: List[Tuple[Api, API_HANDLER]] = [
     (Api.GUILD_MEMBER_LIST, guild_member_list),
     (Api.LOGIN_GET, login_get),
     (Api.CHANNEL_LIST, channel_list),
+    (Api.USER_CHANNEL_CREATE, friend_channel),
+    (Api.GUILD_MEMBER_APPROVE, guild_member_req_approve),
 ]
 
 

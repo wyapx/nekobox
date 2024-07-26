@@ -1,7 +1,8 @@
 import os
 
-from nekobox import NekoBoxAdapter
 from satori.server import Server
+
+from nekobox import NekoBoxAdapter
 
 server = Server(host="localhost", port=7777)
 server.apply(
@@ -10,7 +11,7 @@ server.apply(
         "fa1ccfd6a9fcac523f3af2f67575e54230b1aef5df69a6886a3bae140e39a13b",
         os.environ.get("LAGRANGE_SIGN_URL", ""),
         "linux",
-        "DEBUG"
+        "DEBUG",
     )
 )
 server.run()

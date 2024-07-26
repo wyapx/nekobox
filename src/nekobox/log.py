@@ -1,11 +1,11 @@
-import logging
 import sys
+import logging
 import traceback
-from types import TracebackType
 from typing import Optional
+from types import TracebackType
 
-from lagrange.utils.log import log, install_loguru
 from loguru import logger
+from lagrange.utils.log import log, install_loguru
 
 
 def loguru_exc_callback(cls: type[BaseException], val: BaseException, tb: Optional[TracebackType], *_, **__):

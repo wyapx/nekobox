@@ -30,5 +30,22 @@ distribution = true
 [tool.pdm.dev-dependencies]
 dev = [
     "satori-python>=0.13.2",
-    "pysilk-mod"
+    "pysilk-mod",
+    "isort>=5.13.2",
+    "black>=24.4.2",
 ]
+
+[tool.black]
+line-length = 110
+target-version = ["py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 110
+length_sort = true
+skip_gitignore = true
+force_sort_within_sections = true
+extra_standard_library = ["typing_extensions"]

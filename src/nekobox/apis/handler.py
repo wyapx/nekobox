@@ -1,18 +1,28 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from lagrange.client.client import Client
-from graia.amnesia.builtins.memcache import MemcacheService
-from datetime import timedelta
 from launart import Launart
-
-from satori import transform, MessageObject, Channel, ChannelType, User, Guild, Member, Login, LoginStatus, PageResult
 from satori.parser import parse
 from satori.server import Request, route
+from lagrange.client.client import Client
+from lagrange.pb.service.group import FetchGrpRspBody
+from graia.amnesia.builtins.memcache import MemcacheService
+from satori import (
+    User,
+    Guild,
+    Login,
+    Member,
+    Channel,
+    PageResult,
+    ChannelType,
+    LoginStatus,
+    MessageObject,
+    transform,
+)
 
 from ..consts import PLATFORM
 from ..uid import resolve_uid
-from ..transformer import satori_to_msg, msg_to_satori
 from ..msgid import decode_msgid, encode_msgid
+from ..transformer import msg_to_satori, satori_to_msg
 
 
 async def login_get(client: Client, _request: Request[route.Login]):
@@ -21,10 +31,8 @@ async def login_get(client: Client, _request: Request[route.Login]):
         self_id=str(client.uin),
         platform=PLATFORM,
         user=User(
-            str(client.uin),
-            name=str(client.uin),
-            avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
-        )
+            str(client.uin), name=str(client.uin), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
+        ),
     ).dump()
 
 
@@ -35,9 +43,7 @@ async def channel_list(client: Client, request: Request[route.ChannelListParam])
     # _next = request.params.get("next")
     guild = next((i for i in guilds.data if i.id == str(guild_id)), None)
     return {
-        "data": [
-            Channel(encode_msgid(1, guild_id), ChannelType.TEXT, guild.name if guild else None).dump()
-        ]
+        "data": [Channel(encode_msgid(1, guild_id), ChannelType.TEXT, guild.name if guild else None).dump()]
     }
 
 
@@ -46,13 +52,10 @@ async def msg_create(client: Client, req: Request[route.MessageParam]):
     tp = transform(parse(req.params["content"]))
 
     if typ == 1:
-        rsp = await client.send_grp_msg(
-            await satori_to_msg(client, tp, grp_id=uin), uin
-        )
+        rsp = await client.send_grp_msg(await satori_to_msg(client, tp, grp_id=uin), uin)
     elif typ == 2:
         rsp = await client.send_friend_msg(
-            await satori_to_msg(client, tp, uid=resolve_uid(uin)),
-            resolve_uid(uin)
+            await satori_to_msg(client, tp, uid=resolve_uid(uin)), resolve_uid(uin)
         )
     else:
         raise NotImplementedError(typ)
@@ -82,7 +85,7 @@ async def msg_get(client: Client, req: Request[route.MessageOpParam]):
         str(rsp),
         await msg_to_satori(rsp.msg_chain),
         channel=Channel(encode_msgid(1, rsp.grp_id), ChannelType.TEXT, rsp.grp_name),
-        user=User(str(rsp.uin), rsp.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={rsp.uin}&s=640")
+        user=User(str(rsp.uin), rsp.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={rsp.uin}&s=640"),
     )
 
 
@@ -117,12 +120,13 @@ async def guild_member_list(client: Client, req: Request[route.GuildXXXListParam
             user=User(
                 id=str(body.account.uin),
                 name=body.nickname,
-                avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={body.account.uin}&spec=640"
+                avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={body.account.uin}&spec=640",
             ),
             nick=body.name.string if body.name else body.nickname,
             avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={body.account.uin}&spec=640",
-            joined_at=datetime.fromtimestamp(body.joined_time)
-        ).dump() for body in rsp.body
+            joined_at=datetime.fromtimestamp(body.joined_time),
+        ).dump()
+        for body in rsp.body
     ]
 
     return {
@@ -142,11 +146,11 @@ async def guild_member_get(client: Client, req: Request[route.GuildMemberGetPara
             user=User(
                 id=str(rsp.account.uin),
                 name=rsp.nickname,
-                avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={rsp.account.uin}&spec=640"
+                avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={rsp.account.uin}&spec=640",
             ),
             nick=rsp.name.string if rsp.name else rsp.nickname,
             avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={rsp.account.uin}&spec=640",
-            joined_at=datetime.fromtimestamp(rsp.joined_time)
+            joined_at=datetime.fromtimestamp(rsp.joined_time),
         ).dump()
     ]
 
@@ -167,3 +171,30 @@ async def guild_get_list(client: Client, req: Request[route.GuildListParam]) -> 
     await cache.set("guild_list", data, timedelta(minutes=5))
 
     return PageResult(data, None)
+
+
+async def friend_channel(client: Client, req: Request[route.UserChannelCreateParam]):
+    user_id = int(req.params["user_id"])
+    try:
+        pid = resolve_uid(user_id)
+    except ValueError:
+        pid = req.params.get("guild_id", None)
+    return Channel(
+        encode_msgid(2, user_id),
+        ChannelType.DIRECT,
+        str(user_id),
+        pid,
+    )
+
+
+async def guild_member_req_approve(client: Client, req: Request[route.ApproveParam]):
+    cache = Launart.current().get_component(MemcacheService).cache
+    data: FetchGrpRspBody = await cache.get(f"grp_mbr_req#{req.params['message_id']}")
+    await client.set_grp_request(
+        data.group.grp_id,
+        int(req.params["message_id"]),
+        data.event_type,
+        1 if req.params["approve"] else 2,
+        req.params["comment"],
+    )
+    return [{"content": "ok"}]

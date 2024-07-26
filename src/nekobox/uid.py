@@ -13,7 +13,7 @@ def resolve_uin(uid: str) -> int:
     for k, v in uid_dict.items():
         if v == uid:
             return k
-    raise ValueError(f'uid {uid} not found in uid_dict')
+    raise ValueError(f"uid {uid} not found in uid_dict")
 
 
 def save_uid(uin: int, uid: str) -> None:
