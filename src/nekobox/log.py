@@ -1,39 +1,11 @@
-import logging
 import sys
+import logging
 import traceback
-from types import TracebackType
 from typing import Optional
+from types import TracebackType
 
 from loguru import logger
-
-info_format = (
-    "<green>{time:YYYY-MM-DD HH:mm:ss.S}</green> | <level>{level: <8}</level> | "
-    "<cyan>{name}</cyan> - <level>{message}</level>"
-)
-debug_format = (
-    "<green>{time:YYYY-MM-DD HH:mm:ss.SSSS}</green> | <level>{level: <9}</level> | "
-    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level> "
-)
-
-
-class LoguruHandler(logging.Handler):
-    def emit(self, record):
-        # Get corresponding Loguru level if it exists.
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-
-        # Find caller from where originated the logged message.
-        frame, depth = sys._getframe(6), 6  # type: ignore
-        while frame and frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
-
-
-loguru_handler = LoguruHandler()
+from lagrange.utils.log import log, install_loguru
 
 
 def loguru_exc_callback(cls: type[BaseException], val: BaseException, tb: Optional[TracebackType], *_, **__):
@@ -91,7 +63,6 @@ def loguru_exc_callback_async(loop, context: dict):
 
 
 def patch_logging(level="INFO"):
-    logging.basicConfig(handlers=[loguru_handler], level=level.upper(), force=True)
     for name in logging.root.manager.loggerDict:
         _logger = logging.getLogger(name)
         for handler in _logger.handlers:
@@ -99,11 +70,10 @@ def patch_logging(level="INFO"):
                 _logger.removeHandler(handler)
     sys.excepthook = loguru_exc_callback
     traceback.print_exception = loguru_exc_callback
-    log_format = debug_format if level.upper() == "DEBUG" else info_format
-    logger.remove()
+    log.set_level(level)
     logger.add(
         "./logs/latest.log",
-        format=log_format,
+        format="<g>{time:MM-DD HH:mm:ss}</g> | <lvl>{level: <8}</lvl> | <c><u>{name}</u></c> | <lvl>{message}</lvl>",
         level=level.upper(),
         enqueue=False,
         rotation="00:00",
@@ -113,4 +83,6 @@ def patch_logging(level="INFO"):
         diagnose=True,
         colorize=False,
     )
-    logger.add(sys.stderr, level=level.upper(), format=log_format, backtrace=True, diagnose=True, colorize=True)
+
+
+install_loguru()

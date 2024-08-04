@@ -1,6 +1,5 @@
 import os
 import ssl
-import sys
 import asyncio
 from io import BytesIO
 from shutil import which
@@ -9,40 +8,8 @@ from urllib.request import getproxies
 from tempfile import TemporaryDirectory
 
 from loguru import logger
-from lagrange.utils.httpcat import HttpCat, HttpResponse
 from lagrange.utils.audio.decoder import decode
-
-try:
-    from qrcode.main import QRCode as _QRCode
-
-    class QRCode(_QRCode):
-        def print_tty(self, out=None):
-            if not out:
-                out = sys.stdout
-            if not self.data_cache:
-                self.make()
-
-            modcount = self.modules_count
-            b = "  "
-            w = "▇▇"
-
-            out.write("\n")
-            out.write(w * (modcount + 2))
-            out.write("\n")
-            for r in range(modcount):
-                out.write(w)
-                for c in range(modcount):
-                    if self.modules[r][c]:
-                        out.write(b)
-                    else:
-                        out.write(w)
-                out.write(f"{w}\n")
-            out.write(w * (modcount + 2))
-            out.write("\n")
-            out.flush()
-
-except ImportError:
-    QRCode = None
+from lagrange.utils.httpcat import HttpCat, HttpResponse
 
 try:
     from pysilk import async_encode_file
@@ -92,12 +59,7 @@ class HttpCatProxies(HttpCat):
             raise ConnectionError(f"proxy error: {rsp.code}")
 
     async def send_request(
-        self,
-        method: str,
-        path: str,
-        body=None,
-        follow_redirect=True,
-        conn_timeout=0
+        self, method: str, path: str, body=None, follow_redirect=True, conn_timeout=0
     ) -> HttpResponse:
         if not (self._reader and self._writer):
             proxies = getproxies()
@@ -111,7 +73,7 @@ class HttpCatProxies(HttpCat):
                         self._writer.transport.get_protocol(),
                         ssl.create_default_context(),
                         server_side=False,
-                        server_hostname=self.host
+                        server_hostname=self.host,
                     )
                     self._writer._transport = _transport
         return await super().send_request(method, path, body, follow_redirect, conn_timeout)
@@ -161,8 +123,7 @@ async def transform_audio(audio: BinaryIO) -> BinaryIO:
 
             out_path = os.path.join(temp_dir, f"{os.urandom(16).hex()}.tmp")
             proc = await asyncio.create_subprocess_exec(
-                ffmpeg, "-i", input_path, "-f", "s16le",
-                "-ar", "24000", "-ac", "1", "-y", out_path
+                ffmpeg, "-i", input_path, "-f", "s16le", "-ar", "24000", "-ac", "1", "-y", out_path
             )
             if await proc.wait() != 0:
                 raise ProcessLookupError(proc.returncode)
