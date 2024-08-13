@@ -25,6 +25,9 @@ class InfoManager:
         assert self._sig, "SigInfo not initialized"
         return self._sig
 
+    def renew_sig_info(self):
+        self._sig = SigInfo.new()
+
     def save_all(self):
         with self._sig_info_path.open("wb") as f:
             f.write(self._sig.dump())
