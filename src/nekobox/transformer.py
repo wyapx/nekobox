@@ -1,30 +1,27 @@
-import base64
 import sys
+import base64
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import quote, unquote
-from typing import List, TYPE_CHECKING, Union, Tuple
-
-from lagrange.client.message.elems import Text, Image, At, Audio, Quote, MarketFace
-from lagrange.client.message.types import T
+from typing import TYPE_CHECKING, List, Tuple, Union
 
 from loguru import logger
-from satori.element import (
-    Style as SatoriStyle,
-    Br as SatoriBr,
-    Paragraph as SatoriParagraph,
-)
-from satori import (
-    Element as SatoriElement,
-    At as SatoriAt,
-    Text as SatoriText,
-    Quote as SatoriQuote,
-    Image as SatoriImage,
-    Audio as SatoriAudio,
-    Message as SatoriMessage,
-    Link as SatoriLink,
-)
-from .utils import download_resource, transform_audio
+from satori import At as SatoriAt
+from satori import Link as SatoriLink
+from satori import Text as SatoriText
+from satori import Audio as SatoriAudio
+from satori import Image as SatoriImage
+from satori import Quote as SatoriQuote
+from satori import Author as SatoriAuthor
+from satori.element import Br as SatoriBr
+from satori import Element as SatoriElement
+from satori import Message as SatoriMessage
+from satori.element import Style as SatoriStyle
+from lagrange.client.message.types import Element
+from satori.element import Paragraph as SatoriParagraph
+from lagrange.client.message.elems import At, Text, AtAll, Audio, Image, Quote, MarketFace
+
+from .utils import transform_audio, download_resource
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -77,15 +74,17 @@ async def parse_resource(url: str) -> bytes:
         raise ValueError("Unsupported URL: %s" % url)
 
 
-async def msg_to_satori(msgs: List[T]) -> List[SatoriElement]:
+async def msg_to_satori(msgs: List[Element]) -> List[SatoriElement]:
     new_msg: List[SatoriElement] = []
     for m in msgs:
         if isinstance(m, At):
             new_msg.append(SatoriAt(str(m.uin), m.text))
+        elif isinstance(m, AtAll):
+            new_msg.append(SatoriAt.all())
         elif isinstance(m, Quote):
-            new_msg.append(SatoriQuote(str(m.seq), False))
+            new_msg.append(SatoriQuote(str(m.seq))(SatoriAuthor(str(m.uin)), m.msg))
         elif isinstance(m, (Image, MarketFace)):
-            new_msg.append(SatoriImage(str(m.url), width=m.width, height=m.height))
+            new_msg.append(SatoriImage.of(str(m.url), extra={"width": m.width, "height": m.height}))
         elif isinstance(m, Audio):
             new_msg.append(SatoriAudio(m.name))
         elif isinstance(m, Text):
@@ -95,24 +94,23 @@ async def msg_to_satori(msgs: List[T]) -> List[SatoriElement]:
     return new_msg
 
 
-async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0, uid="") -> List[T]:
-    new_msg: List[T] = []
+async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0, uid="") -> List[Element]:
+    new_msg: List[Element] = []
     for m in msgs:
         if isinstance(m, SatoriAt):
-            new_msg.append(At(f"@{m.name}", int(m.id), ""))
+            if m.type:
+                new_msg.append(AtAll("@全体成员"))
+            elif m.id:
+                new_msg.append(At(f"@{m.name or m.id}", int(m.id), ""))
         elif isinstance(m, SatoriQuote):
-            target = await client.get_grp_msg(grp_id, int(m.id))
+            target = await client.get_grp_msg(grp_id, int(m.id or 0))
             new_msg.append(Quote.build(target[0]))
         elif isinstance(m, SatoriImage):
             data = await parse_resource(m.src)
             if grp_id:
-                new_msg.append(
-                    await client.upload_grp_image(BytesIO(data), grp_id)
-                )
+                new_msg.append(await client.upload_grp_image(BytesIO(data), grp_id))
             elif uid:
-                new_msg.append(
-                    await client.upload_friend_image(BytesIO(data), uid)
-                )
+                new_msg.append(await client.upload_friend_image(BytesIO(data), uid))
             else:
                 raise AssertionError
         elif isinstance(m, SatoriText):
@@ -125,23 +123,15 @@ async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0
             if isinstance(m, SatoriBr):
                 new_msg.append(Text("\n"))
             else:
-                new_msg.extend(
-                    await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid)
-                )
+                new_msg.extend(await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid))
                 if isinstance(m, SatoriParagraph):
                     new_msg.append(Text("\n"))
         elif isinstance(m, SatoriAudio):
-            data = await transform_audio(
-                BytesIO(await parse_resource(m.src))
-            )
+            data = await transform_audio(BytesIO(await parse_resource(m.src)))
             if grp_id:
-                new_msg.append(
-                    await client.upload_grp_audio(data, grp_id)
-                )
+                new_msg.append(await client.upload_grp_audio(data, grp_id))
             elif uid:
-                new_msg.append(
-                    await client.upload_friend_audio(data, uid)
-                )
+                new_msg.append(await client.upload_friend_audio(data, uid))
             else:
                 raise AssertionError
         else:
