@@ -1,6 +1,6 @@
 [project]
 name = "nekobox"
-version = "0.1.1"
+version = "0.1.2"
 description = "A Satori backend powered by lagrange-python"
 authors = [
     {name = "wyapx", email = "admin@nullcat.cn"},
