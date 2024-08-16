@@ -227,3 +227,36 @@ async def friend_list(client: Client, req: Request[route.FriendListParam]):
 
     cache.set("guild_list", data, timedelta(minutes=5))
     return PageResult(data, None)
+
+
+async def _reaction_process(client: Client, req: Request, is_del: bool):
+    typ, grp_id = decode_msgid(req.params["channel_id"])
+    seq = int(req.params["message_id"])
+    emoji = req.params["emoji"]
+
+    if len(emoji) == 1:
+        pass
+    elif emoji.find("face:") == 0 and emoji[5:].isdigit():
+        emoji = int(emoji[5:])
+    else:
+        raise ValueError(f"Invalid emoji value '{emoji}'")
+
+    if typ == 1:
+        await client.send_grp_reaction(grp_id, seq, emoji, is_cancel=is_del)
+    else:
+        raise TypeError("Guild only")
+
+    return [{"content": "ok"}]
+
+async def reaction_create(client: Client, req: Request[route.ReactionCreateParam]):
+    return await _reaction_process(client, req, False)
+
+
+async def reaction_delete(client: Client, req: Request[route.ReactionDeleteParam]):
+    if "user_id" in req.params and req.params.get("user_id") != client.uin:
+        raise ValueError("Cannot delete other user's reaction")
+    return await _reaction_process(client, req, True)
+
+
+async def reaction_clear(client: Client, req: Request[route.ReactionClearParam]):
+    return await _reaction_process(client, req, True)

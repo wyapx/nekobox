@@ -19,6 +19,9 @@ from .handler import (
     guild_member_mute,
     guild_member_req_approve,
     friend_list,
+    reaction_create,
+    reaction_delete,
+    reaction_clear,
 )
 
 __all__ = ["apply_api_handlers"]
@@ -37,6 +40,9 @@ ALL_APIS: List[Tuple[Api, API_HANDLER]] = [
     (Api.USER_CHANNEL_CREATE, friend_channel),
     (Api.GUILD_MEMBER_APPROVE, guild_member_req_approve),
     (Api.FRIEND_LIST, friend_list),
+    (Api.REACTION_CREATE, reaction_create),
+    (Api.REACTION_DELETE, reaction_delete),
+    (Api.REACTION_CLEAR, reaction_clear)
 ]
 
 
