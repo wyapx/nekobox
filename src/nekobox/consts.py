@@ -1,1 +1,1 @@
-PLATFORM = "lagrange-python"
+PLATFORM = "nekobox"
