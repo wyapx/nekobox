@@ -18,6 +18,7 @@ from satori import (
     LoginStatus,
     MessageObject,
     transform,
+    Role,
 )
 
 from ..consts import PLATFORM
@@ -207,3 +208,22 @@ async def guild_member_req_approve(client: Client, req: Request[route.ApprovePar
         req.params["comment"],
     )
     return [{"content": "ok"}]
+
+
+async def friend_list(client: Client, req: Request[route.FriendListParam]):
+    cache = Launart.current().get_component(MemcacheService).cache
+
+    if data := await cache.get("guild_list"):
+        return PageResult(data, None)
+
+    friends = await client.get_friend_list()
+    data = [
+        User(
+            id=str(f.uin),
+            name=f.nickname,
+            avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={f.uin}&spec=640"
+        ) for f in friends
+    ]
+
+    cache.set("guild_list", data, timedelta(minutes=5))
+    return PageResult(data, None)

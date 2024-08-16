@@ -78,6 +78,7 @@ commands:
    - [x] login-get
    - [x] user-channel-create `用于向 user 发起私聊 (前提是好友)`
    - [x] guild-member-approve
+   - [x] friend_list
 
 3. 事件
    - [x] message-created
