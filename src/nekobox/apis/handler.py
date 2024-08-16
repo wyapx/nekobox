@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from loguru import logger
 from launart import Launart
 from satori.parser import parse
 from satori.server import Request, route
@@ -49,17 +50,25 @@ async def channel_list(client: Client, request: Request[route.ChannelListParam])
 
 async def msg_create(client: Client, req: Request[route.MessageParam]):
     typ, uin = decode_msgid(req.params["channel_id"])
-    tp = transform(parse(req.params["content"]))
-
-    if typ == 1:
-        rsp = await client.send_grp_msg(await satori_to_msg(client, tp, grp_id=uin), uin)
-    elif typ == 2:
-        rsp = await client.send_friend_msg(
-            await satori_to_msg(client, tp, uid=resolve_uid(uin)), resolve_uid(uin)
+    if req.params["content"]:
+        tp = transform(
+            parse(
+                req.params["content"]
+            )
         )
+
+        if typ == 1:
+            rsp = await client.send_grp_msg(await satori_to_msg(client, tp, grp_id=uin), uin)
+        elif typ == 2:
+            rsp = await client.send_friend_msg(
+                await satori_to_msg(client, tp, uid=resolve_uid(uin)), resolve_uid(uin)
+            )
+        else:
+            raise NotImplementedError(typ)
+        return [MessageObject.from_elements(str(rsp), tp)]
     else:
-        raise NotImplementedError(typ)
-    return [MessageObject.from_elements(str(rsp), tp)]
+        logger.warning("Empty message, ignore")
+        return []
 
 
 async def msg_delete(client: Client, req: Request[route.MessageOpParam]):
