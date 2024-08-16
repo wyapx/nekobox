@@ -1,14 +1,14 @@
 [project]
 name = "lagrange-satori"
-version = "0.0.1"
+version = "0.1.0"
 description = "A Satori backend powered by lagrange-python"
 authors = [
     {name = "wyapx", email = "admin@nullcat.cn"},
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"}
 ]
 dependencies = [
-    "satori-python-server==0.13.3",
-    "lagrange-python==0.1.0",
+    "satori-python-server>=0.13.3",
+    "lagrange-python>=0.1.0",
 ]
 requires-python = ">=3.9"
 readme = "README.md"

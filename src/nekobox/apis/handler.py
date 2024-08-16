@@ -99,6 +99,25 @@ async def msg_get(client: Client, req: Request[route.MessageOpParam]):
     )
 
 
+async def msg_list(client: Client, req: Request[route.MessageListParam]):
+    typ, grp_id = decode_msgid(req.params["channel_id"])
+    seq = int(req.params["message_id"])
+
+    if typ == 1:
+        rsp = await client.get_grp_msg(grp_id, seq)
+    else:
+        raise NotImplementedError(typ)
+
+    result = [
+        MessageObject.from_elements(
+            str(r),
+            await msg_to_satori(r.msg_chain),
+            channel=Channel(encode_msgid(1, r.grp_id), ChannelType.TEXT, r.grp_name),
+            user=User(str(r.uin), r.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={r.uin}&s=640"),
+        ) for r in rsp
+    ]
+
+
 async def guild_member_kick(client: Client, req: Request[route.GuildMemberKickParam]):
     grp_id = int(req.params["guild_id"])
     user_id = int(req.params["user_id"])

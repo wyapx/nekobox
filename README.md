@@ -6,6 +6,21 @@
 
 ## 如何启动
 
+使用稳定版(推荐)
+
+```shell
+# 安装环境
+python -m pip install nekobox
+
+# 可选依赖，用于支持非silk格式audio发送
+python -m pip install pysilk-mod
+
+# 跟随步骤生成配置文件后，使用手Q扫码即可登录
+python -m nekobox run
+```
+
+使用开发版
+
 ```shell
 # 安装环境
 git clone https://github.com/wyapx/nekobox
