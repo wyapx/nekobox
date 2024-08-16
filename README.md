@@ -90,5 +90,7 @@ commands:
    - [x] guild-member-removed
    - [x] guild-updated  `群名更改`
    - [x] guild-member-request
+   - [x] reaction-added
+   - [x] reaction-deleted
 
 由于大多数事件和操作没有标准参考，特性的新增可能需要一些时间.

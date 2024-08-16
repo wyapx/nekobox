@@ -26,6 +26,7 @@ from lagrange.client.events.group import (
     GroupNameChanged,
     GroupMemberJoined,
     GroupMemberJoinRequest,
+    GroupReaction,
 )
 
 from ..consts import PLATFORM
@@ -227,4 +228,27 @@ async def on_grp_member_request(client: Client, event: GroupMemberJoinRequest) -
         user=user,
         member=Member(user),
         message=MessageObject(id=str(req.seq), content=req.comment),
+    )
+
+
+async def on_grp_reaction(client: Client, event: GroupReaction) -> Optional[Event]:
+    user_id = resolve_uin(event.uid)
+
+    if event.is_emoji:
+        emoji = chr(event.emoji_id)
+    else:
+        emoji = f"face:{event.emoji_id}"
+
+    return Event(
+        0,
+        EventType.REACTION_ADDED if event.is_increase else EventType.REACTION_REMOVED,
+        PLATFORM,
+        str(client.uin),
+        datetime.now(),
+        guild=Guild(
+            str(event.grp_id), str(event.grp_id), avatar=f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
+        ),
+        user=User(str(user_id), str(user_id), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={user_id}&s=640"),
+        _type="reaction",
+        _data={"message_id": event.seq, "emoji": emoji, "count": event.emoji_count}
     )
