@@ -1,5 +1,5 @@
 [project]
-name = "lagrange-satori"
+name = "nekobox"
 version = "0.1.0"
 description = "A Satori backend powered by lagrange-python"
 authors = [
