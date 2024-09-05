@@ -22,11 +22,11 @@ from satori import (
 from lagrange.client.events.group import (
     GroupRecall,
     GroupMessage,
+    GroupReaction,
     GroupMemberQuit,
     GroupNameChanged,
     GroupMemberJoined,
     GroupMemberJoinRequest,
-    GroupReaction,
 )
 
 from ..consts import PLATFORM
@@ -246,9 +246,11 @@ async def on_grp_reaction(client: Client, event: GroupReaction) -> Optional[Even
         str(client.uin),
         datetime.now(),
         guild=Guild(
-            str(event.grp_id), str(event.grp_id), avatar=f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
+            str(event.grp_id),
+            str(event.grp_id),
+            avatar=f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640",
         ),
         user=User(str(user_id), str(user_id), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={user_id}&s=640"),
         _type="reaction",
-        _data={"message_id": event.seq, "emoji": emoji, "count": event.emoji_count}
+        _data={"message_id": event.seq, "emoji": emoji, "count": event.emoji_count},
     )

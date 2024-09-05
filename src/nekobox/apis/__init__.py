@@ -10,18 +10,18 @@ from .handler import (
     login_get,
     msg_create,
     msg_delete,
+    friend_list,
     channel_list,
     friend_channel,
     guild_get_list,
+    reaction_clear,
+    reaction_create,
+    reaction_delete,
     guild_member_get,
     guild_member_kick,
     guild_member_list,
     guild_member_mute,
     guild_member_req_approve,
-    friend_list,
-    reaction_create,
-    reaction_delete,
-    reaction_clear,
 )
 
 __all__ = ["apply_api_handlers"]
@@ -42,7 +42,7 @@ ALL_APIS: List[Tuple[Api, API_HANDLER]] = [
     (Api.FRIEND_LIST, friend_list),
     (Api.REACTION_CREATE, reaction_create),
     (Api.REACTION_DELETE, reaction_delete),
-    (Api.REACTION_CLEAR, reaction_clear)
+    (Api.REACTION_CLEAR, reaction_clear),
 ]
 
 

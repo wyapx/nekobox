@@ -17,8 +17,8 @@ from satori.element import Br as SatoriBr
 from satori import Element as SatoriElement
 from satori import Message as SatoriMessage
 from satori.element import Style as SatoriStyle
-from satori.element import Custom as SatoriCustom
 from lagrange.client.message.types import Element
+from satori.element import Custom as SatoriCustom
 from satori.element import Paragraph as SatoriParagraph
 from lagrange.client.message.elems import At, Text, AtAll, Audio, Image, Quote, MarketFace
 
@@ -137,9 +137,7 @@ async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0
                 raise AssertionError
         elif isinstance(m, SatoriCustom):
             if m.type == "template":
-                new_msg.extend(
-                    await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid)
-                )
+                new_msg.extend(await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid))
             else:
                 logger.warning("unknown message type on Custom: %s", m.type)
         else:

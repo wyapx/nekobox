@@ -1,7 +1,7 @@
-import configparser
 import shutil
 import asyncio
 import secrets
+import configparser
 from pathlib import Path
 from argparse import ArgumentParser
 from configparser import ConfigParser

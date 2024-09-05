@@ -19,6 +19,6 @@ def decode_msgid(msg_id: str) -> Tuple[int, int]:
     if msg_id.isdigit():  # guild
         return 1, int(msg_id)
     elif msg_id.find("private:") == 0:
-        return 2, int(msg_id[len("private:"):])
+        return 2, int(msg_id[len("private:") :])
     else:
         raise ValueError(f"Invalid msg id: {msg_id}")
