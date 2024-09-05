@@ -6,23 +6,17 @@ from urllib.parse import quote, unquote
 from typing import TYPE_CHECKING, List, Tuple, Union
 
 from loguru import logger
-from satori import (
-    At as SatoriAt,
-    Link as SatoriLink,
-    Text as SatoriText,
-    Audio as SatoriAudio,
-    Image as SatoriImage,
-    Quote as SatoriQuote,
-    Author as SatoriAuthor,
-    Element as SatoriElement,
-    Message as SatoriMessage,
-)
-from satori.element import (
-    Br as SatoriBr,
-    Style as SatoriStyle,
-    Custom as SatoriCustom,
-    Paragraph as SatoriParagraph,
-)
+from satori import At as SatoriAt
+from satori import Link as SatoriLink
+from satori import Text as SatoriText
+from satori import Audio as SatoriAudio
+from satori import Image as SatoriImage
+from satori import Quote as SatoriQuote
+from satori import Author as SatoriAuthor
+from satori.element import Br as SatoriBr
+from satori import Element as SatoriElement
+from satori import Message as SatoriMessage
+from satori.element import Style as SatoriStyle
 from lagrange.client.message.types import Element
 from satori.element import Custom as SatoriCustom
 from satori.element import Paragraph as SatoriParagraph
