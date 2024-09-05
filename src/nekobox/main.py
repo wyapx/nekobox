@@ -131,7 +131,12 @@ class NekoBoxAdapter(Adapter):
 
     async def launch(self, manager: Launart):
         logger.info(f"Running on '{version.__version__}' for {self.uin}")
+
         with self.im as im:
+            if im.sig_info.last_update and (datetime.fromtimestamp(im.sig_info.last_update) + timedelta(30)) < datetime.now():
+                logger.warning("siginfo expired")
+                im.renew_sig_info()
+
             self.client = client = Client(
                 self.uin,
                 self.info,
@@ -144,12 +149,14 @@ class NekoBoxAdapter(Adapter):
             async with self.stage("preparing"):
                 client.connect()
                 success = True
-                if (datetime.fromtimestamp(im.sig_info.last_update) + timedelta(14)) > datetime.now():
-                    logger.info("try to fast login")
-                    if not await client.register():
-                        logger.error("fast login failed, try to re-login...")
-                        success = await client.easy_login()
-                elif im.sig_info.last_update:
+                if im.sig_info.last_update:
+                    if (datetime.fromtimestamp(im.sig_info.last_update) + timedelta(14)) > datetime.now():
+                        logger.info("try to fast login")
+                        if not await client.register():
+                            logger.error("fast login failed, try to re-login...")
+                            success = await client.easy_login()
+                    else:
+                    elif im.sig_info.last_update:
                     logger.warning("Refresh siginfo")
                     success = await client.easy_login()
                 else:

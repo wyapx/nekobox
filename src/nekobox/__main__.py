@@ -1,3 +1,4 @@
+import configparser
 import shutil
 import asyncio
 import secrets
@@ -71,7 +72,11 @@ def set_cfg(
                 i = default
         if i and unique and i not in unique:
             raise ValueError
+
+        if not cfg.has_section(section):
+            cfg.add_section(section)
         cfg.set(section, option, i)
+
         return i
     except (TypeError, ValueError):
         print(f">>> 输入不符合约束: {green}{unique}{reset}")

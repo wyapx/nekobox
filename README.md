@@ -6,6 +6,21 @@
 
 ## 如何启动
 
+使用稳定版(推荐)
+
+```shell
+# 安装环境
+python -m pip install nekobox
+
+# 可选依赖，用于支持非silk格式audio发送
+python -m pip install pysilk-mod
+
+# 跟随步骤生成配置文件后，使用手Q扫码即可登录
+python -m nekobox run
+```
+
+使用开发版
+
 ```shell
 # 安装环境
 git clone https://github.com/wyapx/nekobox
@@ -78,6 +93,10 @@ commands:
    - [x] login-get
    - [x] user-channel-create `用于向 user 发起私聊 (前提是好友)`
    - [x] guild-member-approve
+   - [x] friend-list
+   - [x] reaction-create
+   - [x] reaction-delete
+   - [x] reaction-clear
 
 3. 事件
    - [x] message-created
@@ -86,5 +105,7 @@ commands:
    - [x] guild-member-removed
    - [x] guild-updated  `群名更改`
    - [x] guild-member-request
+   - [x] reaction-added
+   - [x] reaction-deleted
 
 由于大多数事件和操作没有标准参考，特性的新增可能需要一些时间.

@@ -11,6 +11,7 @@ from lagrange.client.events.group import (
     GroupNameChanged,
     GroupMemberJoined,
     GroupMemberJoinRequest,
+    GroupReaction,
 )
 
 from .utils import event_register
@@ -24,6 +25,7 @@ from .handler import (
     on_client_offline,
     on_grp_name_changed,
     on_grp_member_request,
+    on_grp_reaction
 )
 
 __all__ = ["apply_event_handler"]
@@ -37,6 +39,7 @@ ALL_EVENT_HANDLERS = [
     (GroupMemberQuit, on_member_quit),
     (GroupNameChanged, on_grp_name_changed),
     (GroupMemberJoinRequest, on_grp_member_request),
+    (GroupReaction, on_grp_reaction)
 ]
 
 
