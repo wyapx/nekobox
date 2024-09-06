@@ -78,6 +78,10 @@ class NekoBoxAdapter(Adapter):
                     name=str(self.client.uin),
                     avatar=f"https://q1.qlogo.cn/g?b=qq&nk={self.client.uin}&s=640",
                 ),
+                features=[
+                    "message.delete",
+                    "guild.plain",
+                ]
             )
         ]
 
