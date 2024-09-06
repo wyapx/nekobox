@@ -1,7 +1,7 @@
-import configparser
 import shutil
 import asyncio
 import secrets
+import configparser
 from pathlib import Path
 from argparse import ArgumentParser
 from configparser import ConfigParser
@@ -91,7 +91,8 @@ def generate_cfg(args):
     uin = args.uin
     if not uin:
         uin = set_cfg(cfg, "default", "uin", "Bot 的 QQ 号")
-    cfg.add_section(uin)
+    if uin not in cfg:
+        cfg.add_section(uin)
     set_cfg(cfg, uin, "sign", "Bot 的 SignUrl")
     set_cfg(cfg, uin, "protocol", "Bot 的协议类型", default="linux", unique=["linux", "macos", "windows"])
     set_cfg(cfg, uin, "token", "Satori 的验证 token", default=secrets.token_hex(8))
@@ -165,13 +166,26 @@ def _default(args):
     print(f"默认账号已设置为 {purple}{ul}{args.uin}{reset}")
 
 
+def _list(args):
+    if not (Path.cwd() / CONFIG_FILE).exists():
+        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件")
+        return
+    cfg = ConfigParser()
+    cfg.read(CONFIG_FILE, encoding="utf-8")
+    print(f"{cyan}当前配置文件中的账号有:{reset}")
+    for section in cfg.sections():
+        if section == "default":
+            continue
+        print(f"{magnet}{ul}{section}{reset}")
+
+
 def main():
     parser = ArgumentParser(description=f"{cyan}NekoBox/lagrange-python-satori Server 工具{reset}")
     command = parser.add_subparsers(dest="command", title=f"commands")
     run_parser = command.add_parser("run", help="启动服务器")
     run_parser.add_argument("uin", type=str, nargs="?", help="选择账号")
     run_parser.set_defaults(func=_run)
-    gen_parser = command.add_parser("gen", help="生成配置文件")
+    gen_parser = command.add_parser("gen", help="生成或更新配置文件")
     gen_parser.add_argument("uin", type=str, nargs="?", help="选择账号")
     gen_parser.set_defaults(func=generate_cfg)
     clean_parser = command.add_parser("clear", help="清除数据")
@@ -180,6 +194,9 @@ def main():
     default_parser = command.add_parser("default", help="设置默认账号")
     default_parser.add_argument("uin", type=str, help="选择账号")
     default_parser.set_defaults(func=_default)
+    list_parser = command.add_parser("list", help="列出所有账号")
+    list_parser.set_defaults(func=_list)
+
     args = parser.parse_args()
 
     if args.command:

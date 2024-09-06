@@ -18,7 +18,6 @@ from satori import (
     LoginStatus,
     MessageObject,
     transform,
-    Role,
 )
 
 from ..consts import PLATFORM
@@ -52,11 +51,7 @@ async def channel_list(client: Client, request: Request[route.ChannelListParam])
 async def msg_create(client: Client, req: Request[route.MessageParam]):
     typ, uin = decode_msgid(req.params["channel_id"])
     if req.params["content"]:
-        tp = transform(
-            parse(
-                req.params["content"]
-            )
-        )
+        tp = transform(parse(req.params["content"]))
 
         if typ == 1:
             rsp = await client.send_grp_msg(await satori_to_msg(client, tp, grp_id=uin), uin)
@@ -101,20 +96,21 @@ async def msg_get(client: Client, req: Request[route.MessageOpParam]):
 
 async def msg_list(client: Client, req: Request[route.MessageListParam]):
     typ, grp_id = decode_msgid(req.params["channel_id"])
-    seq = int(req.params["message_id"])
+    seq = 0
 
     if typ == 1:
         rsp = await client.get_grp_msg(grp_id, seq)
     else:
         raise NotImplementedError(typ)
 
-    result = [
+    return [
         MessageObject.from_elements(
             str(r),
             await msg_to_satori(r.msg_chain),
             channel=Channel(encode_msgid(1, r.grp_id), ChannelType.TEXT, r.grp_name),
             user=User(str(r.uin), r.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={r.uin}&s=640"),
-        ) for r in rsp
+        )
+        for r in rsp
     ]
 
 
@@ -240,11 +236,12 @@ async def friend_list(client: Client, req: Request[route.FriendListParam]):
         User(
             id=str(f.uin),
             name=f.nickname,
-            avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={f.uin}&spec=640"
-        ) for f in friends
+            avatar=f"http://thirdqq.qlogo.cn/headimg_dl?dst_uin={f.uin}&spec=640",
+        )
+        for f in friends
     ]
 
-    cache.set("guild_list", data, timedelta(minutes=5))
+    await cache.set("guild_list", data, timedelta(minutes=5))
     return PageResult(data, None)
 
 
@@ -266,6 +263,7 @@ async def _reaction_process(client: Client, req: Request, is_del: bool):
         raise TypeError("Guild only")
 
     return [{"content": "ok"}]
+
 
 async def reaction_create(client: Client, req: Request[route.ReactionCreateParam]):
     return await _reaction_process(client, req, False)
