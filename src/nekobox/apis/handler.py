@@ -127,7 +127,7 @@ async def guild_member_kick(client: Client, req: Request[route.GuildMemberKickPa
 async def guild_member_mute(client: Client, req: Request[route.GuildMemberMuteParam]):
     grp_id = int(req.params["guild_id"])
     user_id = int(req.params["user_id"])
-    duration = int(req.params["duration"]) * 1000  # ms to s
+    duration = int(req.params["duration"]) // 1000  # ms to s
 
     await client.set_mute_member(grp_id, user_id, duration)
 
