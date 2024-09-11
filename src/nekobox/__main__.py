@@ -27,10 +27,10 @@ ul = "\033[4m"
 bd = "\033[1m"
 
 
-def run(uin: int, host: str, port: int, token: str, protocol: str, sign_url: str, level: str):
+def run(uin: int, host: str, port: int, token: str, path: str, protocol: str, sign_url: str, level: str):
     loop = it(asyncio.AbstractEventLoop)
     loop.set_exception_handler(loguru_exc_callback_async)
-    server = Server(host=host, port=port)
+    server = Server(host=host, port=port, path=path, stream_threshold=4 * 1024 * 1024)
     server.apply(NekoBoxAdapter(uin, token, sign_url, protocol, level))  # type: ignore
     server.run()
 
@@ -64,10 +64,12 @@ def set_cfg(
         unique = []
     try:
         i = str(
-            input(f"{description}{f' {cyan}({default}){reset}' if default else f' {cyan}(必填项){reset}'}: ")
+            input(
+                f"{description}{f' {cyan}(必填项){reset}' if default is None else f' {cyan}({default}){reset}'}: "
+            )
         )
         if not i:
-            if not default:
+            if default is None:
                 raise ValueError
             else:
                 i = default
@@ -113,6 +115,7 @@ def generate_cfg(args):
     set_cfg(cfg, uin, "token", "Satori 的验证 token", default=secrets.token_hex(8))
     set_cfg(cfg, uin, "host", "Satori 服务器绑定地址", default="127.0.0.1")
     set_cfg(cfg, uin, "port", "Satori 服务器绑定端口", default="7777")
+    set_cfg(cfg, uin, "path", "Satori 服务器部署路径 (可以为空)", default="")
     set_cfg(
         cfg,
         uin,
@@ -175,10 +178,11 @@ def _run(args):
     port = int(cfg[uin]["port"])
     token = cfg[uin]["token"]
     sign_url = cfg[uin]["sign"]
+    path = cfg[uin].get("path", "")
     protocol = cfg[uin]["protocol"]
     level = "DEBUG" if args.debug else cfg[uin]["log_level"]
     logger.success("读取配置文件完成")
-    run(int(uin), host, port, token, protocol, sign_url, level)
+    run(int(uin), host, port, token, path, protocol, sign_url, level)
 
 
 def _show(args):
@@ -191,7 +195,10 @@ def _show(args):
         exists = [section for section in cfg.sections() if section != "default"]
         for section in exists:
             print(f" - {magnet}{ul}{section}{reset}")
-        args.uin = input(f"{gold}请选择一个账号{reset} {cyan}({cfg['default']['uin']}){reset}: ") or cfg["default"]["uin"]
+        args.uin = (
+            input(f"{gold}请选择一个账号{reset} {cyan}({cfg['default']['uin']}){reset}: ")
+            or cfg["default"]["uin"]
+        )
     if args.uin not in cfg:
         print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在")
         return
@@ -200,6 +207,7 @@ def _show(args):
     print(f"{green}验证 token:     {reset}{cfg[args.uin]['token']}")
     print(f"{green}服务器绑定地址: {reset}{cfg[args.uin]['host']}")
     print(f"{green}服务器绑定端口: {reset}{cfg[args.uin]['port']}")
+    print(f"{green}服务器部署路径: {reset}{cfg[args.uin].get('path', '')}")
     print(f"{green}默认日志等级:   {reset}{cfg[args.uin]['log_level']}")
 
 

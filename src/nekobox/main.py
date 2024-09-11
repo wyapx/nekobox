@@ -54,14 +54,19 @@ class NekoBoxAdapter(Adapter):
     def ensure(self, platform: str, self_id: str) -> bool:
         return platform == PLATFORM and self_id == str(self.uin)
 
-    def authenticate(self, token: str) -> bool:
-        if token != self.access_token:
+    def authenticate(self, token: str | None) -> bool:
+        if self.access_token and token != self.access_token:
             logger.warning("Authentication failed, check upstream token setting.")
             return False
         return True
 
     async def download_uploaded(self, platform: str, self_id: str, path: str) -> bytes:
         raise NotImplementedError
+
+    async def download_proxied(self, prefix: str, url: str) -> bytes:
+        if prefix == "https://multimedia.nt.qq.com.cn/":
+            ...  # TODO: append rkey
+        return await super().download_proxied(prefix, url)
 
     async def get_logins(self) -> List[Login]:
         return [
@@ -81,7 +86,7 @@ class NekoBoxAdapter(Adapter):
                 features=[
                     "message.delete",
                     "guild.plain",
-                ]
+                ],
             )
         ]
 

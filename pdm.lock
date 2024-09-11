@@ -3,7 +3,7 @@
 
 [metadata]
 groups = ["default", "audio", "dev"]
-strategy = ["cross_platform"]
+strategy = []
 lock_version = "4.5.0"
 content_hash = "sha256:2ef1d8256c9640e13306069bc043025eb26b7d47b9aaf91dd901991d3a0fb9a0"
 
@@ -806,7 +806,7 @@ files = [
 
 [[package]]
 name = "satori-python-server"
-version = "0.13.3"
+version = "0.14.4"
 requires_python = ">=3.8"
 summary = "Satori Protocol SDK for python, specify server part"
 dependencies = [
@@ -819,8 +819,8 @@ dependencies = [
     "uvicorn[standard]>=0.28.0",
 ]
 files = [
-    {file = "satori_python_server-0.13.3-py3-none-any.whl", hash = "sha256:c8fa4dfdf9024cab0f7389a8381dfc9951de9e53583aff388b16495744c4af3d"},
-    {file = "satori_python_server-0.13.3.tar.gz", hash = "sha256:56f2dedc167b183170c1c9bb2edac24619e288134f25eebe1b6ebb8aec945493"},
+    {file = "satori_python_server-0.14.4-py3-none-any.whl", hash = "sha256:7b8bc006f12a37cd29f40c386b70a5e2d5a9c7371e61b1356cd88a86f04c2797"},
+    {file = "satori_python_server-0.14.4.tar.gz", hash = "sha256:cf7571a8e10c9ac73acbc5b14683fc50d72e23e2d87b3e9f64ba3e1b047e3c8e"},
 ]
 
 [[package]]
