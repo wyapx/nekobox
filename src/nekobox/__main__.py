@@ -127,6 +127,26 @@ def generate_cfg(args):
     print(f"{green}配置文件已保存{reset}")
 
 
+def _delete(args):
+    if not (Path.cwd() / CONFIG_FILE).exists():
+        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件")
+        return
+    cfg = ConfigParser()
+    cfg.read(CONFIG_FILE, encoding="utf-8")
+    if not args.uin or args.uin == "?":
+        exists = [section for section in cfg.sections() if section != "default"]
+        for section in exists:
+            print(f" - {magnet}{ul}{section}{reset}")
+        args.uin = input(f"{gold}请选择一个账号{reset}: ")
+    if args.uin not in cfg:
+        print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在")
+        return
+    cfg.remove_section(args.uin)
+    with (Path.cwd() / CONFIG_FILE).open("w+", encoding="utf-8") as f:
+        cfg.write(f)
+    print(f"账号 {purple}{ul}{args.uin}{reset} 的配置已删除")
+
+
 def _run(args):
     if not (Path.cwd() / CONFIG_FILE).exists():
         if args.uin and args.uin != "?":
@@ -159,6 +179,28 @@ def _run(args):
     level = "DEBUG" if args.debug else cfg[uin]["log_level"]
     logger.success("读取配置文件完成")
     run(int(uin), host, port, token, protocol, sign_url, level)
+
+
+def _show(args):
+    if not (Path.cwd() / CONFIG_FILE).exists():
+        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件")
+        return
+    cfg = ConfigParser()
+    cfg.read(CONFIG_FILE, encoding="utf-8")
+    if not args.uin or args.uin == "?":
+        exists = [section for section in cfg.sections() if section != "default"]
+        for section in exists:
+            print(f" - {magnet}{ul}{section}{reset}")
+        args.uin = input(f"{gold}请选择一个账号{reset} {cyan}({cfg['default']['uin']}){reset}: ") or cfg["default"]["uin"]
+    if args.uin not in cfg:
+        print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在")
+        return
+    print(f"{green}SignUrl:        {reset}{cfg[args.uin]['sign']}")
+    print(f"{green}协议类型:       {reset}{cfg[args.uin]['protocol']}")
+    print(f"{green}验证 token:     {reset}{cfg[args.uin]['token']}")
+    print(f"{green}服务器绑定地址: {reset}{cfg[args.uin]['host']}")
+    print(f"{green}服务器绑定端口: {reset}{cfg[args.uin]['port']}")
+    print(f"{green}默认日志等级:   {reset}{cfg[args.uin]['log_level']}")
 
 
 def _clear(args):
@@ -233,9 +275,15 @@ def main():
     gen_parser.set_defaults(func=generate_cfg)
     list_parser = command.add_parser("list", help="列出所有账号")
     list_parser.set_defaults(func=_list)
+    show_parser = command.add_parser("show", help="显示账号配置")
+    show_parser.add_argument("uin", type=str, nargs="?", help="选择账号; 输入 '?' 以交互式选择账号")
+    show_parser.set_defaults(func=_show)
     clean_parser = command.add_parser("clear", help="清除数据")
     clean_parser.add_argument("uin", type=str, nargs="?", help="选择账号; 输入 '?' 以交互式选择账号")
     clean_parser.set_defaults(func=_clear)
+    delete_parser = command.add_parser("delete", help="删除账号配置")
+    delete_parser.add_argument("uin", type=str, nargs="?", help="选择账号; 输入 '?' 以交互式选择账号")
+    delete_parser.set_defaults(func=_delete)
     default_parser = command.add_parser("default", help="设置默认账号")
     default_parser.add_argument("uin", type=str, nargs="?", help="选择账号")
     default_parser.set_defaults(func=_default)

@@ -64,11 +64,13 @@ options:
   -v, --version         show program's version number and exit
 
 commands:
-  {run,gen,list,clear,default}
+  {run,gen,list,show,clear,delete,default}
     run                 启动服务器
     gen                 生成或更新配置文件
     list                列出所有账号
+    show                显示账号配置
     clear               清除数据
+    delete              删除账号配置
     default             设置默认账号
 ```
 
