@@ -63,7 +63,7 @@ class HttpCatProxies(HttpCat):
     async def send_request(
         self, method: str, path: str, body=None, follow_redirect=True, conn_timeout=0
     ) -> HttpResponse:
-        if not self._reader and self._writer:
+        if not (self._reader and self._writer):
             proxies = getproxies()
             if "http" in proxies:
                 await self.connect_http_proxy(proxies.get("http"), conn_timeout)
