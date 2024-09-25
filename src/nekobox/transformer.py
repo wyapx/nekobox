@@ -23,7 +23,7 @@ from satori.element import Custom as SatoriCustom
 from satori.element import Paragraph as SatoriParagraph
 from lagrange.client.message.elems import At, Text, AtAll, Audio, Image, Quote, MarketFace
 
-from .utils import cx_server, transform_audio, download_resource
+from .utils import cx_server, get_public_ip, transform_audio, download_resource
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -91,6 +91,8 @@ async def msg_to_satori(msgs: List[Element]) -> List[SatoriElement]:
                 url = url.with_query({k: v for k, v in url.query.items() if k != "rkey"})
                 if server := cx_server.get(None):
                     url = URL(server.url_base) / "proxy" / str(url)
+                    if url.host == "0.0.0.0":
+                        url = url.with_host(get_public_ip())
             new_msg.append(SatoriImage.of(str(url), extra={"width": m.width, "height": m.height}))
         elif isinstance(m, Audio):
             new_msg.append(SatoriAudio(m.name))

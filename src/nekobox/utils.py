@@ -1,5 +1,6 @@
 import os
 import ssl
+import socket
 import asyncio
 from io import BytesIO
 from shutil import which
@@ -17,6 +18,18 @@ try:
     from pysilk import async_encode_file
 except ImportError:
     async_encode_file = None
+
+
+def get_public_ip():
+    st = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        st.connect(("10.255.255.255", 1))
+        IP = st.getsockname()[0]
+    except Exception:
+        IP = "localhost"
+    finally:
+        st.close()
+    return IP
 
 
 class HttpCatProxies(HttpCat):
