@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
-from loguru import logger
 from launart import Launart
 from satori.parser import parse
+from loguru import logger as log
 from satori.server import Request, route
 from lagrange.client.client import Client
 from lagrange.pb.service.group import FetchGrpRspBody
@@ -24,6 +24,8 @@ from ..consts import PLATFORM
 from ..uid import resolve_uid
 from ..msgid import decode_msgid, encode_msgid
 from ..transformer import msg_to_satori, satori_to_msg
+
+logger = log.patch(lambda r: r.update(name="nekobox.apis"))
 
 
 async def login_get(client: Client, _request: Request[route.Login]):

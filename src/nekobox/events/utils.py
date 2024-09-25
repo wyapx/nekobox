@@ -20,7 +20,7 @@ def event_register(
         ev = await handler(_client, event)
         if ev:
             if ev.type != EventType.MESSAGE_CREATED:
-                logger.debug(f"Event '{ev.type}' was triggered")
+                logger.trace(f"Event '{ev.type}' was triggered")
             await queue.put(ev)
 
     client.events.subscribe(event_type, handler=_after_handle)

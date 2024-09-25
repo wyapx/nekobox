@@ -1,8 +1,9 @@
+import re
 from typing import Optional
 from datetime import datetime, timedelta
 
-from loguru import logger
 from launart import Launart
+from loguru import logger as log
 from lagrange.client.client import Client
 from lagrange.client.events.friend import FriendMessage
 from graia.amnesia.builtins.memcache import MemcacheService
@@ -34,47 +35,102 @@ from ..msgid import encode_msgid
 from ..transformer import msg_to_satori
 from ..uid import save_uid, resolve_uin
 
+logger = log.patch(lambda r: r.update(name="nekobox.events"))
+
+
+def escape_tag(s: str) -> str:
+    """用于记录带颜色日志时转义 `<tag>` 类型特殊标签
+
+    参考: [loguru color 标签](https://loguru.readthedocs.io/en/stable/api/logger.html#color)
+
+    Args:
+        s: 需要转义的字符串
+    """
+    return re.sub(r"</?((?:[fb]g\s)?[^<>\s]*)>", r"\\\g<0>", s)
+
 
 async def on_grp_msg(client: Client, event: GroupMessage) -> Optional[Event]:
     save_uid(event.uin, event.uid)
     content = await msg_to_satori(event.msg_chain)
     msg = "".join(str(i) for i in content)
-    logger.info(f"{event.grp_name}[{event.nickname}]: {msg!r}")
+    logger.info(f"[message-created] {event.nickname}({event.uin})@{event.grp_id}: {escape_tag(msg)!r}")
     usr = User(
         str(event.uin),
         event.nickname,
         avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640",
         is_bot=event.is_bot,
     )
+    channel = Channel(encode_msgid(1, event.grp_id), ChannelType.TEXT, event.grp_name)
+    guild = Guild(
+        str(event.grp_id), event.grp_name, f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
+    )
+    member = Member(usr, event.nickname, avatar=usr.avatar)
+    cache = Launart.current().get_component(MemcacheService).cache
+    await cache.set(f"guild@{guild.id}", guild, timedelta(minutes=5))
+    await cache.set(f"channel@{channel.id}", channel, timedelta(minutes=5))
+    await cache.set(f"user@{usr.id}", usr, timedelta(minutes=5))
+    await cache.set(f"member@{guild.id}#{usr.id}", member, timedelta(minutes=5))
     return Event(
         0,
         EventType.MESSAGE_CREATED,
         PLATFORM,
         str(client.uin),
         datetime.fromtimestamp(event.time),
-        channel=Channel(encode_msgid(1, event.grp_id), ChannelType.TEXT, event.grp_name),
-        guild=Guild(
-            str(event.grp_id), event.grp_name, f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
-        ),
+        channel=channel,
+        guild=guild,
         user=usr,
-        member=Member(usr, event.nickname, avatar=usr.avatar),
+        member=member,
         message=MessageObject.from_elements(str(event.seq), content),
     )
 
 
 async def on_grp_recall(client: Client, event: GroupRecall) -> Optional[Event]:
     uin = resolve_uin(event.uid)
-    usr = User(str(uin), str(uin), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={uin}&s=640")
+    cache = Launart.current().get_component(MemcacheService).cache
+    usr = await cache.get(f"user@{uin}")
+    guild = await cache.get(f"guild@{event.grp_id}")
+    channel = await cache.get(f"channel@{encode_msgid(1, event.grp_id)}")
+    member = await cache.get(f"member@{event.grp_id}#{uin}")
+    if not usr or not member:
+        info = (await client.get_grp_member_info(event.grp_id, event.uid)).body[0]
+        usr = User(
+            str(uin),
+            info.nickname,
+            info.name.string if info.name else None,
+            avatar=f"https://q1.qlogo.cn/g?b=qq&nk={uin}&s=640",
+        )
+        member = Member(usr, info.name.string if info.name else info.nickname, avatar=usr.avatar)
+        await cache.set(f"user@{uin}", usr, timedelta(minutes=5))
+        await cache.set(f"member@{event.grp_id}#{uin}", member, timedelta(minutes=5))
+    if not guild or not channel:
+        grp_list = (await client.get_grp_list()).grp_list
+        for g in grp_list:
+            _guild = Guild(str(g.grp_id), g.info.grp_name, f"https://p.qlogo.cn/gh/{g.grp_id}/{g.grp_id}/640")
+            _channel = Channel(encode_msgid(1, g.grp_id), ChannelType.TEXT, g.info.grp_name)
+            await cache.set(f"guild@{g.grp_id}", _guild, timedelta(minutes=5))
+            await cache.set(f"channel@{_channel.id}", _channel, timedelta(minutes=5))
+            if _guild.id == str(event.grp_id):
+                guild = _guild
+                channel = _channel
+        if not guild or not channel:
+            guild = Guild(
+                str(event.grp_id),
+                str(event.grp_id),
+                f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640",
+            )
+            channel = Channel(encode_msgid(1, event.grp_id), ChannelType.TEXT, str(event.grp_id))
+
+    logger.info(f"[message-deleted] {usr.nick}({usr.id})@{guild.id}: {event.seq}")
     return Event(
         0,
         EventType.MESSAGE_DELETED,
         PLATFORM,
         str(client.uin),
         datetime.fromtimestamp(event.time),
-        channel=Channel(encode_msgid(1, event.grp_id), ChannelType.TEXT),
-        guild=Guild(str(event.grp_id)),
+        channel=channel,
+        guild=guild,
         user=usr,
-        member=Member(usr),
+        member=member,
         message=MessageObject(str(event.seq), event.suffix),
     )
 
@@ -83,23 +139,40 @@ async def on_friend_msg(client: Client, event: FriendMessage) -> Optional[Event]
     save_uid(event.from_uin, event.from_uid)
     content = await msg_to_satori(event.msg_chain)
     msg = "".join(str(i) for i in content)
-    logger.info(f"{event.from_uin}[{event.from_uid}]: {msg!r}")
+    cache = Launart.current().get_component(MemcacheService).cache
+    user = await cache.get(f"user@{event.from_uin}")
+    if not user:
+        frd_list = await client.get_friend_list()
+        for frd in frd_list:
+            _user = User(
+                str(frd.uin),
+                frd.nickname,
+                frd.remark,
+                avatar=f"https://q1.qlogo.cn/g?b=qq&nk={frd.uin}&s=640",
+            )
+            await cache.set(f"user@{frd.uin}", _user, timedelta(minutes=5))
+            if frd.uin == event.from_uin:
+                user = _user
+    if not user:
+        info = await client.get_user_info(event.from_uid)
+        user = User(
+            str(event.from_uin), info.name, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.from_uin}&s=640"
+        )
+    logger.info(f"[message-created] {user.nick or user.name}({user.id}): {escape_tag(msg)!r}")
     return Event(
         0,
         EventType.MESSAGE_CREATED,
         PLATFORM,
         str(client.uin),
         datetime.fromtimestamp(event.timestamp),
-        channel=Channel(encode_msgid(2, event.from_uin), ChannelType.DIRECT, event.from_uid),
-        user=User(
-            str(event.from_uin), event.from_uid, f"https://q1.qlogo.cn/g?b=qq&nk={event.from_uin}&s=640"
-        ),
+        user=user,
+        channel=Channel(encode_msgid(2, event.from_uin), ChannelType.DIRECT, user.name),
         message=MessageObject.from_elements(str(event.seq), content),
     )
 
 
 async def on_client_online(client: Client, event: ClientOnline) -> Optional[Event]:
-    logger.debug("login-updated: online")
+    logger.debug("[login-updated]: online")
     return Event(
         0,
         EventType.LOGIN_UPDATED,
@@ -115,12 +188,16 @@ async def on_client_online(client: Client, event: ClientOnline) -> Optional[Even
                 name=str(client.uin),
                 avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640",
             ),
+            features=[
+                "message.delete",
+                "guild.plain",
+            ],
         ),
     )
 
 
 async def on_client_offline(client: Client, event: ClientOffline) -> Optional[Event]:
-    logger.debug(f"login-updated: {'reconnect' if event.recoverable else 'disconnect'}")
+    logger.debug(f"[login-updated]: {'reconnect' if event.recoverable else 'disconnect'}")
     return Event(
         0,
         EventType.LOGIN_UPDATED,
@@ -136,72 +213,148 @@ async def on_client_offline(client: Client, event: ClientOffline) -> Optional[Ev
                 name=str(client.uin),
                 avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640",
             ),
+            features=[
+                "message.delete",
+                "guild.plain",
+            ],
         ),
     )
 
 
 async def on_grp_name_changed(client: Client, event: GroupNameChanged) -> Event:
     operator_id = resolve_uin(event.operator_uid)
+    cache = Launart.current().get_component(MemcacheService).cache
+    guild = Guild(
+        str(event.grp_id), event.name_new, f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
+    )
+    await cache.set(f"guild@{guild.id}", guild, timedelta(minutes=5))
+    operator = await cache.get(f"member@{event.grp_id}#{operator_id}")
+    if not operator:
+        info = (await client.get_grp_member_info(event.grp_id, event.operator_uid)).body[0]
+        info1 = await client.get_user_info(event.operator_uid)
+        operator = Member(
+            User(
+                str(operator_id),
+                info1.name,
+                info.nickname,
+                avatar=f"https://q1.qlogo.cn/g?b=qq&nk={operator_id}&s=640",
+            ),
+            info.name.string if info.name else info.nickname,
+            avatar=f"https://q1.qlogo.cn/g?b=qq&nk={operator_id}&s=640",
+        )
+        await cache.set(f"member@{event.grp_id}#{operator_id}", operator, timedelta(minutes=5))
+    logger.info(f"[guild-updated] {operator.nick} changed the group name to {event.name_new}")
     return Event(
         0,
         EventType.GUILD_UPDATED,
         PLATFORM,
         str(client.uin),
         datetime.now(),
-        guild=Guild(
-            str(event.grp_id), event.name_new, f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
+        guild=guild,
+        user=User(
+            str(client.uin), str(client.uin), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
         ),
-        operator=User(
-            str(operator_id), str(operator_id), f"https://q1.qlogo.cn/g?b=qq&nk={operator_id}&s=640"
-        ),
+        operator=operator.user,
     )
 
 
 async def on_member_joined(client: Client, event: GroupMemberJoined) -> Event:
-    rsp = (await client.get_grp_member_info(event.grp_id, event.uid)).body[0]
-    nickname = rsp.name.string if rsp.name else None
-    user = User(
-        str(event.uin), str(rsp.nickname), nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640"
-    )
+    cache = Launart.current().get_component(MemcacheService).cache
+    member = await cache.get(f"member@{event.grp_id}#{event.uin}")
+    if not member:
+        info = (await client.get_grp_member_info(event.grp_id, event.uid)).body[0]
+        user = User(str(event.uin), info.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640")
+        member = Member(
+            user,
+            info.name.string if info.name else info.nickname,
+            avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640",
+        )
+        await cache.set(f"member@{event.grp_id}#{event.uin}", member, timedelta(minutes=5))
+    guild = await cache.get(f"guild@{event.grp_id}")
+    if not guild:
+        grp_list = (await client.get_grp_list()).grp_list
+        for g in grp_list:
+            _guild = Guild(str(g.grp_id), g.info.grp_name, f"https://p.qlogo.cn/gh/{g.grp_id}/{g.grp_id}/640")
+            await cache.set(f"guild@{g.grp_id}", _guild, timedelta(minutes=5))
+            if _guild.id == str(event.grp_id):
+                guild = _guild
+        if not guild:
+            guild = Guild(
+                str(event.grp_id),
+                str(event.grp_id),
+                f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640",
+            )
+    logger.info(f"[guild-member-added] {member.nick}({event.uin}) joined {guild.name}({guild.id})")
     return Event(
         0,
         EventType.GUILD_MEMBER_ADDED,
         PLATFORM,
         str(client.uin),
         datetime.now(),
-        guild=Guild(
-            str(event.grp_id), str(event.grp_id), f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
-        ),
-        member=Member(
-            user,
-            user.nick or user.name,
-            avatar=user.avatar,
-            joined_at=datetime.fromtimestamp(rsp.joined_time),
-        ),
-        user=user,
+        guild=guild,
+        member=member,
+        user=member.user,
     )
 
 
 async def on_member_quit(client: Client, event: GroupMemberQuit) -> Optional[Event]:
-    user = User(str(event.uin), str(event.uin), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640")
+    cache = Launart.current().get_component(MemcacheService).cache
+    member = await cache.get(f"member@{event.grp_id}#{event.uin}")
+    if not member:
+        info = (await client.get_grp_member_info(event.grp_id, event.uid)).body[0]
+        user = User(str(event.uin), info.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640")
+        member = Member(
+            user,
+            info.name.string if info.name else info.nickname,
+            avatar=f"https://q1.qlogo.cn/g?b=qq&nk={event.uin}&s=640",
+        )
+        await cache.set(f"member@{event.grp_id}#{event.uin}", member, timedelta(minutes=5))
+    guild = await cache.get(f"guild@{event.grp_id}")
+    if not guild:
+        grp_list = (await client.get_grp_list()).grp_list
+        for g in grp_list:
+            _guild = Guild(str(g.grp_id), g.info.grp_name, f"https://p.qlogo.cn/gh/{g.grp_id}/{g.grp_id}/640")
+            await cache.set(f"guild@{g.grp_id}", _guild, timedelta(minutes=5))
+            if _guild.id == str(event.grp_id):
+                guild = _guild
+        if not guild:
+            guild = Guild(
+                str(event.grp_id),
+                str(event.grp_id),
+                f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640",
+            )
     operator = None
     if event.is_kicked and event.operator_uid:
         operator_id = resolve_uin(event.operator_uid)
-        operator = User(
-            str(operator_id), str(operator_id), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={operator_id}&s=640"
-        )
+        operator = await cache.get(f"member@{event.grp_id}#{operator_id}")
+        if not operator:
+            info = (await client.get_grp_member_info(event.grp_id, event.operator_uid)).body[0]
+            info1 = await client.get_user_info(event.operator_uid)
+            operator = Member(
+                User(
+                    str(operator_id),
+                    info1.name,
+                    info.nickname,
+                    avatar=f"https://q1.qlogo.cn/g?b=qq&nk={operator_id}&s=640",
+                ),
+                info.name.string if info.name else info.nickname,
+                avatar=f"https://q1.qlogo.cn/g?b=qq&nk={operator_id}&s=640",
+            )
+            await cache.set(f"member@{event.grp_id}#{operator_id}", operator, timedelta(minutes=5))
+    logger.info(
+        f"[guild-member-removed] {member.nick}({event.uin}) left {guild.name}({guild.id}) "
+        f"{f'by {operator.nick}({operator.user.id})' if operator else ''}"  # type: ignore
+    )
     return Event(
         0,
         EventType.GUILD_MEMBER_REMOVED,
         PLATFORM,
         str(client.uin),
         datetime.now(),
-        guild=Guild(
-            str(event.grp_id), str(event.grp_id), f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
-        ),
-        member=Member(user, user.nick or user.name, avatar=user.avatar),
-        user=user,
-        operator=operator,
+        guild=guild,
+        member=member,
+        user=member.user,
+        operator=operator.user if operator else None,
     )
 
 
@@ -216,17 +369,21 @@ async def on_grp_member_request(client: Client, event: GroupMemberJoinRequest) -
     await cache.set(f"grp_mbr_req#{req.seq}", req, timedelta(minutes=30))
     user_id = resolve_uin(event.uid)
     user = User(str(user_id), req.target.name, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={user_id}&s=640")
+    await cache.set(f"user@{user_id}", user, timedelta(minutes=5))
+    guild = Guild(
+        str(event.grp_id), req.group.grp_name, f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
+    )
+    await cache.set(f"guild@{event.grp_id}", guild, timedelta(minutes=5))
+    logger.info(f"[guild-member-request] {user.nick}({user.id}) requested to join {guild.name}({guild.id})")
     return Event(
         0,
         EventType.GUILD_MEMBER_REQUEST,
         PLATFORM,
         str(client.uin),
         datetime.now(),
-        guild=Guild(
-            str(event.grp_id), req.group.grp_name, f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640"
-        ),
+        guild=guild,
         user=user,
-        member=Member(user),
+        member=Member(user, user.name),
         message=MessageObject(id=str(req.seq), content=req.comment),
     )
 
@@ -239,18 +396,45 @@ async def on_grp_reaction(client: Client, event: GroupReaction) -> Optional[Even
     else:
         emoji = f"face:{event.emoji_id}"
 
+    cache = Launart.current().get_component(MemcacheService).cache
+    member = await cache.get(f"member@{event.grp_id}#{user_id}")
+    if not member:
+        info = (await client.get_grp_member_info(event.grp_id, event.uid)).body[0]
+        user = User(str(user_id), info.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={user_id}&s=640")
+        member = Member(
+            user,
+            info.name.string if info.name else info.nickname,
+            avatar=f"https://q1.qlogo.cn/g?b=qq&nk={user_id}&s=640",
+        )
+        await cache.set(f"member@{event.grp_id}#{user_id}", member, timedelta(minutes=5))
+    guild = await cache.get(f"guild@{event.grp_id}")
+    if not guild:
+        grp_list = (await client.get_grp_list()).grp_list
+        for g in grp_list:
+            _guild = Guild(str(g.grp_id), g.info.grp_name, f"https://p.qlogo.cn/gh/{g.grp_id}/{g.grp_id}/640")
+            await cache.set(f"guild@{g.grp_id}", _guild, timedelta(minutes=5))
+            if _guild.id == str(event.grp_id):
+                guild = _guild
+        if not guild:
+            guild = Guild(
+                str(event.grp_id),
+                str(event.grp_id),
+                f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640",
+            )
+    if event.is_increase:
+        action = "added"
+    else:
+        action = "removed"
+    logger.info(f"[reaction-{action}] {member.nick}({user_id}) reacted {emoji} to message {event.seq}")
     return Event(
         0,
         EventType.REACTION_ADDED if event.is_increase else EventType.REACTION_REMOVED,
         PLATFORM,
         str(client.uin),
         datetime.now(),
-        guild=Guild(
-            str(event.grp_id),
-            str(event.grp_id),
-            avatar=f"https://p.qlogo.cn/gh/{event.grp_id}/{event.grp_id}/640",
-        ),
-        user=User(str(user_id), str(user_id), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={user_id}&s=640"),
+        guild=guild,
+        user=member.user,
+        member=member,
         _type="reaction",
         _data={"message_id": event.seq, "emoji": emoji, "count": event.emoji_count},
     )
