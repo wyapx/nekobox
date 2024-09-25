@@ -4,10 +4,12 @@ import asyncio
 from io import BytesIO
 from shutil import which
 from typing import BinaryIO
+from contextvars import ContextVar
 from urllib.request import getproxies
 from tempfile import TemporaryDirectory
 
 from loguru import logger
+from satori.server import Server
 from lagrange.utils.audio.decoder import decode
 from lagrange.utils.httpcat import HttpCat, HttpResponse
 
@@ -29,7 +31,7 @@ class HttpCatProxies(HttpCat):
         while True:
             head_block = await cls._read_line(reader)
             if head_block:
-                k, v = head_block.split(": ")  # type: str
+                k, v = head_block.split(": ")
                 if k.title() == "Set-Cookie":
                     name, value = v[: v.find(";")].split("=", 1)
                     cookies[name] = value
@@ -61,7 +63,7 @@ class HttpCatProxies(HttpCat):
     async def send_request(
         self, method: str, path: str, body=None, follow_redirect=True, conn_timeout=0
     ) -> HttpResponse:
-        if not (self._reader and self._writer):
+        if not self._reader and self._writer:
             proxies = getproxies()
             if "http" in proxies:
                 await self.connect_http_proxy(proxies.get("http"), conn_timeout)
@@ -132,3 +134,6 @@ async def transform_audio(audio: BinaryIO) -> BinaryIO:
         return BytesIO(data)
     else:
         raise RuntimeError("module 'pysilk-mod' not install, transform fail")
+
+
+cx_server: ContextVar[Server] = ContextVar("server")

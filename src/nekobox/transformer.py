@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import quote, unquote
 from typing import TYPE_CHECKING, List, Tuple, Union
 
+from yarl import URL
 from loguru import logger
 from satori import At as SatoriAt
 from satori import Link as SatoriLink
@@ -22,7 +23,7 @@ from satori.element import Custom as SatoriCustom
 from satori.element import Paragraph as SatoriParagraph
 from lagrange.client.message.elems import At, Text, AtAll, Audio, Image, Quote, MarketFace
 
-from .utils import transform_audio, download_resource
+from .utils import cx_server, transform_audio, download_resource
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -85,7 +86,12 @@ async def msg_to_satori(msgs: List[Element]) -> List[SatoriElement]:
         elif isinstance(m, Quote):
             new_msg.append(SatoriQuote(str(m.seq))(SatoriAuthor(str(m.uin)), m.msg))
         elif isinstance(m, (Image, MarketFace)):
-            new_msg.append(SatoriImage.of(str(m.url), extra={"width": m.width, "height": m.height}))
+            url = URL(m.url.replace("&amp;", "&"))
+            if "rkey" in url.query:
+                url = url.with_query({k: v for k, v in url.query.items() if k != "rkey"})
+                if server := cx_server.get(None):
+                    url = URL(server.url_base) / "proxy" / str(url)
+            new_msg.append(SatoriImage.of(str(url), extra={"width": m.width, "height": m.height}))
         elif isinstance(m, Audio):
             new_msg.append(SatoriAudio(m.name))
         elif isinstance(m, Text):

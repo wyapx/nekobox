@@ -36,6 +36,7 @@ dev = [
     "pysilk-mod",
     "isort>=5.13.2",
     "black>=24.4.2",
+    "lagrange-python @ git+https://github.com/LagrangeDev/lagrange-python@broken",
 ]
 
 [tool.black]

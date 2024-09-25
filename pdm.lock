@@ -5,7 +5,7 @@
 groups = ["default", "audio", "dev"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:2ef1d8256c9640e13306069bc043025eb26b7d47b9aaf91dd901991d3a0fb9a0"
+content_hash = "sha256:7ea98e111ce4aa3d0b3d98d6253f61e26fbdec199cf7872b2a82be4d31589842"
 
 [[metadata.targets]]
 requires_python = ">=3.9"
@@ -487,17 +487,16 @@ files = [
 
 [[package]]
 name = "lagrange-python"
-version = "0.1.0"
+version = "0.1.2"
 requires_python = ">=3.9"
+git = "https://github.com/LagrangeDev/lagrange-python"
+ref = "broken"
+revision = "a05321c156ac63d285ab02f300c337db730e2ef1"
 summary = "An Python Implementation of NTQQ PC Protocol"
 dependencies = [
     "cryptography>=40.0.0",
     "qrcode>=7.4.2",
     "typing-extensions>=4.7.0",
-]
-files = [
-    {file = "lagrange_python-0.1.0-py3-none-any.whl", hash = "sha256:eb030d78377dc181047fdd9da07aff8b3d3b98d2a6245e43509b4529a0e270cc"},
-    {file = "lagrange_python-0.1.0.tar.gz", hash = "sha256:858b4fd25ce4166caa9b413cfb51698c5edbffb964d743665da03fd8dc494a72"},
 ]
 
 [[package]]
@@ -806,7 +805,7 @@ files = [
 
 [[package]]
 name = "satori-python-server"
-version = "0.14.4"
+version = "0.14.5"
 requires_python = ">=3.8"
 summary = "Satori Protocol SDK for python, specify server part"
 dependencies = [
@@ -819,8 +818,8 @@ dependencies = [
     "uvicorn[standard]>=0.28.0",
 ]
 files = [
-    {file = "satori_python_server-0.14.4-py3-none-any.whl", hash = "sha256:7b8bc006f12a37cd29f40c386b70a5e2d5a9c7371e61b1356cd88a86f04c2797"},
-    {file = "satori_python_server-0.14.4.tar.gz", hash = "sha256:cf7571a8e10c9ac73acbc5b14683fc50d72e23e2d87b3e9f64ba3e1b047e3c8e"},
+    {file = "satori_python_server-0.14.5-py3-none-any.whl", hash = "sha256:03dcd662833783872f6907c787718fb2d713b879749413ef80b492ea228b8b35"},
+    {file = "satori_python_server-0.14.5.tar.gz", hash = "sha256:d20f7f71396094ff3df141ecdf3d1dc95b490dd422b2b2ca4398ccd931437843"},
 ]
 
 [[package]]

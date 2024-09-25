@@ -19,6 +19,7 @@ from lagrange.utils.sign import sign_provider
 from graia.amnesia.builtins.memcache import MemcacheService
 
 from .consts import PLATFORM
+from .utils import cx_server
 from .log import patch_logging
 from .apis import apply_api_handlers
 from .events import apply_event_handler
@@ -64,8 +65,14 @@ class NekoBoxAdapter(Adapter):
         raise NotImplementedError
 
     async def download_proxied(self, prefix: str, url: str) -> bytes:
+        url = url.replace("&amp;", "&")
         if prefix == "https://multimedia.nt.qq.com.cn/":
-            ...  # TODO: append rkey
+            _, rkey = await self.client.get_rkey()
+            url = f"{url}{rkey}"
+        elif prefix == "https://gchat.qpic.cn":
+            if url.startswith("https://gchat.qpic.cn/download"):
+                _, rkey = await self.client.get_rkey()
+                url = f"{url}{rkey}"
         return await super().download_proxied(prefix, url)
 
     async def get_logins(self) -> List[Login]:
@@ -140,6 +147,7 @@ class NekoBoxAdapter(Adapter):
 
     async def launch(self, manager: Launart):
         logger.info(f"Running on '{version.__version__}' for {self.uin}")
+        tk = cx_server.set(self.server)
 
         with self.im as im:
             if (
@@ -189,3 +197,5 @@ class NekoBoxAdapter(Adapter):
                 await client.stop()
 
             logger.success("Client stopped")
+
+        cx_server.reset(tk)
