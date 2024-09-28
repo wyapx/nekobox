@@ -51,7 +51,7 @@ def escape_tag(s: str) -> str:
 
 async def on_grp_msg(client: Client, event: GroupMessage) -> Optional[Event]:
     save_uid(event.uin, event.uid)
-    content = await msg_to_satori(event.msg_chain)
+    content = await msg_to_satori(event.msg_chain, client.uin, gid=event.grp_id)
     msg = "".join(str(i) for i in content)
     logger.info(f"[message-created] {event.nickname}({event.uin})@{event.grp_id}: {escape_tag(msg)!r}")
     usr = User(
@@ -137,7 +137,7 @@ async def on_grp_recall(client: Client, event: GroupRecall) -> Optional[Event]:
 
 async def on_friend_msg(client: Client, event: FriendMessage) -> Optional[Event]:
     save_uid(event.from_uin, event.from_uid)
-    content = await msg_to_satori(event.msg_chain)
+    content = await msg_to_satori(event.msg_chain, client.uin, uid=event.from_uid)
     msg = "".join(str(i) for i in content)
     cache = Launart.current().get_component(MemcacheService).cache
     user = await cache.get(f"user@{event.from_uin}")

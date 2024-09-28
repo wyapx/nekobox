@@ -90,7 +90,7 @@ async def msg_get(client: Client, req: Request[route.MessageOpParam]):
 
     return MessageObject.from_elements(
         str(rsp),
-        await msg_to_satori(rsp.msg_chain),
+        await msg_to_satori(rsp.msg_chain, client.uin, gid=grp_id),
         channel=Channel(encode_msgid(1, rsp.grp_id), ChannelType.TEXT, rsp.grp_name),
         user=User(str(rsp.uin), rsp.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={rsp.uin}&s=640"),
     )
@@ -108,7 +108,7 @@ async def msg_list(client: Client, req: Request[route.MessageListParam]):
     return [
         MessageObject.from_elements(
             str(r),
-            await msg_to_satori(r.msg_chain),
+            await msg_to_satori(r.msg_chain, client.uin, gid=grp_id),
             channel=Channel(encode_msgid(1, r.grp_id), ChannelType.TEXT, r.grp_name),
             user=User(str(r.uin), r.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={r.uin}&s=640"),
         )

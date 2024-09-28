@@ -487,11 +487,11 @@ files = [
 
 [[package]]
 name = "lagrange-python"
-version = "0.1.2"
+version = "0.1.3"
 requires_python = ">=3.9"
 git = "https://github.com/LagrangeDev/lagrange-python"
 ref = "broken"
-revision = "a05321c156ac63d285ab02f300c337db730e2ef1"
+revision = "02d76367e1f0ae91576510be5852d9469a743567"
 summary = "An Python Implementation of NTQQ PC Protocol"
 dependencies = [
     "cryptography>=40.0.0",
@@ -769,7 +769,7 @@ files = [
 
 [[package]]
 name = "satori-python"
-version = "0.13.3"
+version = "0.14.5"
 requires_python = ">=3.9"
 summary = "Satori Protocol SDK for python"
 dependencies = [
@@ -784,8 +784,8 @@ dependencies = [
     "yarl>=1.9.4",
 ]
 files = [
-    {file = "satori_python-0.13.3-py3-none-any.whl", hash = "sha256:8d408b6eb52752a34ae4c38e7e63d5de87e074359bebe640d66a70e5742aaf51"},
-    {file = "satori_python-0.13.3.tar.gz", hash = "sha256:edfd9c4b9a3c4e1d1638f982bb2b1182272a9aacf87464389c0b42881246b143"},
+    {file = "satori_python-0.14.5-py3-none-any.whl", hash = "sha256:286317501f1a0a5a54e199dc2679ab434affaa8c1a1ae6c982b57ee18e932911"},
+    {file = "satori_python-0.14.5.tar.gz", hash = "sha256:0ceb93933200393438a7fb9a5f12787e76960a78a245f49245a9ceaaea4dcb4f"},
 ]
 
 [[package]]

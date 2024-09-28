@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import urllib.parse
+from io import BytesIO
 from pathlib import Path
 from contextlib import suppress
 from typing import Set, List, Literal
@@ -16,10 +18,11 @@ from lagrange.client.client import Client
 from launart import Launart, any_completed
 from satori import User, Login, LoginStatus
 from lagrange.utils.sign import sign_provider
+from lagrange.utils.audio.decoder import decode
 from graia.amnesia.builtins.memcache import MemcacheService
 
 from .consts import PLATFORM
-from .utils import cx_server
+from .utils import cx_server, HttpCatProxies, decode_audio_available, decode_audio
 from .log import patch_logging
 from .apis import apply_api_handlers
 from .events import apply_event_handler
@@ -53,6 +56,7 @@ class NekoBoxAdapter(Adapter):
             seq += 1
 
     def ensure(self, platform: str, self_id: str) -> bool:
+        # upload://{platform}/{self_id}/{path}...
         return platform == PLATFORM and self_id == str(self.uin)
 
     def authenticate(self, token: str | None) -> bool:
@@ -62,7 +66,29 @@ class NekoBoxAdapter(Adapter):
         return True
 
     async def download_uploaded(self, platform: str, self_id: str, path: str) -> bytes:
-        raise NotImplementedError
+        res_typ, src_typ, src, key = path.split("/", 3)
+        if res_typ == "audio":
+            if src_typ == "gid":
+                link = await self.client.fetch_audio_url(key, gid=int(src))
+            elif src_typ == "uid":
+                link = await self.client.fetch_audio_url(key, uid=src)
+            else:
+                raise KeyError(f"Unknown source type: {src_typ}")
+            raw = await HttpCatProxies.request(
+                "GET",
+                link.replace("https", "http"),  # multimedia server certificate check failure
+                conn_timeout=15
+            )
+            if raw.code != 200:
+                raise ConnectionError(raw.code, raw.text())
+            data = raw.decompressed_body
+            typ = decode(BytesIO(data))
+            if decode_audio_available(typ.type):
+                return await decode_audio(typ.type, data)
+            else:
+                return data
+        else:
+            raise NotImplementedError(res_typ)
 
     async def download_proxied(self, prefix: str, url: str) -> bytes:
         url = url.replace("&amp;", "&")

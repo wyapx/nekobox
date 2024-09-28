@@ -1,3 +1,5 @@
+from typing import Union
+
 from satori import Api
 from lagrange.client.client import Client
 from satori.server import Adapter, Request
@@ -6,7 +8,7 @@ from .types import API_HANDLER
 
 
 def register_api(
-    api: Api,
+    api: Union[Api, str],
     adapter: Adapter,
     client: Client,
     handler: API_HANDLER,

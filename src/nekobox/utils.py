@@ -2,6 +2,7 @@ import os
 import ssl
 import socket
 import asyncio
+import warnings
 from io import BytesIO
 from shutil import which
 from typing import BinaryIO
@@ -9,15 +10,17 @@ from contextvars import ContextVar
 from urllib.request import getproxies
 from tempfile import TemporaryDirectory
 
+from lagrange.utils.audio.enum import AudioType
 from loguru import logger
 from satori.server import Server
 from lagrange.utils.audio.decoder import decode
 from lagrange.utils.httpcat import HttpCat, HttpResponse
 
 try:
-    from pysilk import async_encode_file
+    from pysilk import async_encode_file, async_decode
 except ImportError:
     async_encode_file = None
+    async_decode = None
 
 
 def get_public_ip():
@@ -147,6 +150,44 @@ async def transform_audio(audio: BinaryIO) -> BinaryIO:
         return BytesIO(data)
     else:
         raise RuntimeError("module 'pysilk-mod' not install, transform fail")
+
+
+async def decode_audio(typ: AudioType, audio: bytes) -> bytes:
+    """audio to wav"""
+    if typ == AudioType.tx_silk or typ == AudioType.silk_v3:
+        return await async_decode(audio, to_wav=True)
+    elif typ == AudioType.amr:
+        ffmpeg = which("ffmpeg")
+
+        with TemporaryDirectory() as temp_dir:
+            input_path = os.path.join(temp_dir, f"{os.urandom(16).hex()}.tmp")
+            with open(input_path, "wb") as f:
+                f.write(audio)
+
+            out_path = os.path.join(temp_dir, f"{os.urandom(16).hex()}.tmp")
+            proc = await asyncio.create_subprocess_exec(
+                ffmpeg, "-i", input_path, "-ab", "12.2k", "-ar", "16000", "-ac", "1", "-y", "-f", "wav", out_path
+            )
+            if await proc.wait() != 0:
+                raise ProcessLookupError(proc.returncode)
+
+            with open(out_path, "rb") as f:
+                return f.read()
+    raise NotImplementedError(typ)
+
+
+def decode_audio_available(typ: AudioType) -> bool:
+    if typ == AudioType.tx_silk or typ == AudioType.silk_v3:
+        if not async_decode:
+            warnings.warn("module 'pysilk-mod' not install, decode fail")
+        else:
+            return True
+    elif typ == AudioType.amr:
+        if not which("ffmpeg"):
+            warnings.warn("ffmpeg not found, decode fail")
+        else:
+            return True
+    return False
 
 
 cx_server: ContextVar[Server] = ContextVar("server")

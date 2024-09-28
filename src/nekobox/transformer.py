@@ -23,6 +23,7 @@ from satori.element import Custom as SatoriCustom
 from satori.element import Paragraph as SatoriParagraph
 from lagrange.client.message.elems import At, Text, AtAll, Audio, Image, Quote, MarketFace
 
+from .consts import PLATFORM
 from .utils import cx_server, get_public_ip, transform_audio, download_resource
 
 if TYPE_CHECKING:
@@ -76,7 +77,7 @@ async def parse_resource(url: str) -> bytes:
         raise ValueError("Unsupported URL: %s" % url)
 
 
-async def msg_to_satori(msgs: List[Element]) -> List[SatoriElement]:
+async def msg_to_satori(msgs: List[Element], self_uin: int, gid=None, uid=None) -> List[SatoriElement]:
     new_msg: List[SatoriElement] = []
     for m in msgs:
         if isinstance(m, At):
@@ -95,7 +96,15 @@ async def msg_to_satori(msgs: List[Element]) -> List[SatoriElement]:
                         url = url.with_host(get_public_ip())
             new_msg.append(SatoriImage.of(str(url), extra={"width": m.width, "height": m.height}))
         elif isinstance(m, Audio):
-            new_msg.append(SatoriAudio(m.name))
+            assert gid or uid, "gid or uid must be specified"
+            new_msg.append(
+                SatoriAudio(
+                    f"upload://{PLATFORM}/{self_uin}"
+                    f"/audio/{'gid' if gid else 'uid'}/{gid or uid}/{m.file_key}",
+                    title=m.text,
+                    duration=m.time
+                )
+            )
         elif isinstance(m, Text):
             new_msg.append(SatoriText(m.text))
         else:
