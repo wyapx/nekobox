@@ -154,11 +154,9 @@ async def transform_audio(audio: BinaryIO) -> BinaryIO:
 
 async def decode_audio(typ: AudioType, audio: bytes) -> bytes:
     """audio to wav"""
-    if typ == AudioType.tx_silk or typ == AudioType.silk_v3:
+    if async_decode and (typ == AudioType.tx_silk or typ == AudioType.silk_v3):
         return await async_decode(audio, to_wav=True)
-    elif typ == AudioType.amr:
-        ffmpeg = which("ffmpeg")
-
+    elif typ == AudioType.amr and (ffmpeg := which("ffmpeg")):
         with TemporaryDirectory() as temp_dir:
             input_path = os.path.join(temp_dir, f"{os.urandom(16).hex()}.tmp")
             with open(input_path, "wb") as f:
