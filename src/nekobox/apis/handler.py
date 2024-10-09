@@ -230,7 +230,7 @@ async def guild_member_req_approve(client: Client, req: Request[route.ApprovePar
 async def friend_list(client: Client, req: Request[route.FriendListParam]):
     cache = Launart.current().get_component(MemcacheService).cache
 
-    if data := await cache.get("guild_list"):
+    if data := await cache.get("friend_list"):
         return PageResult(data, None)
 
     friends = await client.get_friend_list()
@@ -243,7 +243,7 @@ async def friend_list(client: Client, req: Request[route.FriendListParam]):
         for f in friends
     ]
 
-    await cache.set("guild_list", data, timedelta(minutes=5))
+    await cache.set("friend_list", data, timedelta(minutes=5))
     return PageResult(data, None)
 
 
