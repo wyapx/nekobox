@@ -21,7 +21,7 @@ from satori import (
 )
 
 from ..consts import PLATFORM
-from ..uid import resolve_uid
+from ..uid import resolve_uid, save_uid
 from ..msgid import decode_msgid, encode_msgid
 from ..transformer import msg_to_satori, satori_to_msg
 
@@ -58,8 +58,16 @@ async def msg_create(client: Client, req: Request[route.MessageParam]):
         if typ == 1:
             rsp = await client.send_grp_msg(await satori_to_msg(client, tp, grp_id=uin), uin)
         elif typ == 2:
+            try:
+                uid = resolve_uid(uin)
+            except ValueError:  # Cache miss
+                logger.warning(f"uin {uin} not in cache, fetching from server")
+                friends = await client.get_friend_list()
+                for friend in friends:
+                    save_uid(friend.uin, friend.uid)
+                uid = resolve_uid(uin)
             rsp = await client.send_friend_msg(
-                await satori_to_msg(client, tp, uid=resolve_uid(uin)), resolve_uid(uin)
+                await satori_to_msg(client, tp, uid=uid), uid
             )
         else:
             raise NotImplementedError(typ)
@@ -166,7 +174,27 @@ async def guild_member_get(client: Client, req: Request[route.GuildMemberGetPara
     grp_id = int(req.params["guild_id"])
     user_id = int(req.params["user_id"])
 
-    rsp = (await client.get_grp_member_info(grp_id, resolve_uid(user_id))).body[0]
+    try:
+        uid = resolve_uid(user_id)
+    except ValueError:
+        logger.warning(f"uin {user_id} not in cache, fetching from server")
+        next_key = None
+        uid = None
+        while True:
+            rsp = await client.get_grp_members(grp_id, next_key=next_key)
+            for body in rsp.body:
+                if body.account.uin == user_id:
+                    save_uid(body.account.uin, body.account.uid)
+                    uid = body.account.uin
+                    break
+            else:
+                next_key = rsp.next_key
+            if not uid and not next_key:
+                raise ValueError(f"uin {user_id} not found in {grp_id}")
+            elif uid:
+                break
+
+    rsp = (await client.get_grp_member_info(grp_id, uid)).body[0]
 
     return [
         Member(
