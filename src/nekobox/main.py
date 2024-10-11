@@ -211,6 +211,7 @@ class NekoBoxAdapter(Adapter):
                 if not await self.qrlogin(client):
                     logger.error("login error")
                 else:
+                    await self.client.register()
                     success = True
 
             async with self.stage("blocking"):
