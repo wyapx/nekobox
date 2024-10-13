@@ -113,7 +113,7 @@ class NekoBoxAdapter(Adapter):
                 platform=PLATFORM,
                 user=User(
                     str(self.client.uin),
-                    name=str(self.client.uin),
+                    name=self.name or str(self.client.uin),
                     avatar=f"https://q1.qlogo.cn/g?b=qq&nk={self.client.uin}&s=640",
                 ),
                 features=[
@@ -143,6 +143,7 @@ class NekoBoxAdapter(Adapter):
 
         self.im = InfoManager(uin, scope / "device.json", scope / "sig.bin")
         self.uin = uin
+        self.name = ""
         self.info = app_list[protocol]
         self.sign = sign_provider(sign_url) if sign_url else None
         self.queue = asyncio.Queue()
@@ -217,6 +218,7 @@ class NekoBoxAdapter(Adapter):
             async with self.stage("blocking"):
                 if success:
                     im.save_all()
+                    self.name = (await client.get_user_info(uin=client.uin)).name
                     await any_completed(manager.status.wait_for_sigexit(), client._network.wait_closed())
 
             async with self.stage("cleanup"):
