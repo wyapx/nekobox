@@ -1,6 +1,6 @@
 [project]
 name = "nekobox"
-version = "0.1.2"
+version = "0.1.3"
 description = "A Satori backend powered by lagrange-python"
 authors = [
     {name = "wyapx", email = "admin@nullcat.cn"},
@@ -8,7 +8,7 @@ authors = [
 ]
 dependencies = [
     "satori-python-server>=0.13.3",
-    "lagrange-python>=0.1.0",
+    "lagrange-python>=0.1.3",
 ]
 requires-python = ">=3.9"
 readme = "README.md"
