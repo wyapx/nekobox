@@ -5,7 +5,7 @@
 groups = ["default", "audio", "dev"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:00bcacb9bddf0d9b9820a31288c3dcec38c1e33a79e3a65a2703d5cf4e0e02a7"
+content_hash = "sha256:2f508dbc86ea2d7e37e45768bedd766ee57125b21f0aaaf12aa9dc8a62e680ea"
 
 [[metadata.targets]]
 requires_python = ">=3.9"
@@ -491,10 +491,11 @@ files = [
 
 [[package]]
 name = "lagrange-python"
-version = "0.1.3"
+version = "0.1.5"
 requires_python = ">=3.9"
 git = "https://github.com/LagrangeDev/lagrange-python"
-revision = "d4276e4283662bb1b6e1c1050352454315b80557"
+ref = "broken"
+revision = "4130abb0fc8d869bd428b7b94e8e88fa03b970ef"
 summary = "An Python Implementation of NTQQ PC Protocol"
 dependencies = [
     "cryptography>=40.0.0",
@@ -790,7 +791,7 @@ files = [
 
 [[package]]
 name = "satori-python"
-version = "0.14.5"
+version = "0.15.0"
 requires_python = ">=3.9"
 summary = "Satori Protocol SDK for python"
 dependencies = [
@@ -805,13 +806,13 @@ dependencies = [
     "yarl>=1.9.4",
 ]
 files = [
-    {file = "satori_python-0.14.5-py3-none-any.whl", hash = "sha256:286317501f1a0a5a54e199dc2679ab434affaa8c1a1ae6c982b57ee18e932911"},
-    {file = "satori_python-0.14.5.tar.gz", hash = "sha256:0ceb93933200393438a7fb9a5f12787e76960a78a245f49245a9ceaaea4dcb4f"},
+    {file = "satori_python-0.15.0-py3-none-any.whl", hash = "sha256:c648b297b10defed0447569c2e22eff4c2b33dd0c52c359f4c292153b9990429"},
+    {file = "satori_python-0.15.0.tar.gz", hash = "sha256:58a97fcc2b835d48c88d4892acdf85b4f3d1fb7367ff30966ae788f2294671a6"},
 ]
 
 [[package]]
 name = "satori-python-core"
-version = "0.13.1"
+version = "0.15.0"
 requires_python = ">=3.8"
 summary = "Satori Protocol SDK for python, specify common part"
 dependencies = [
@@ -820,13 +821,13 @@ dependencies = [
     "yarl>=1.9.4",
 ]
 files = [
-    {file = "satori_python_core-0.13.1-py3-none-any.whl", hash = "sha256:d89c28978c8245acd56f8aed378183d3c170ee0412ce143f8fee2dc9a0dc764a"},
-    {file = "satori_python_core-0.13.1.tar.gz", hash = "sha256:0f9719213fe661c0ecbd2342e85b83aa75e8ac3034b48966d82e8ba18a3245e4"},
+    {file = "satori_python_core-0.15.0-py3-none-any.whl", hash = "sha256:92d390aac0b8ec7cd24c81d19a747596dc319fe8d1b5485bd43170ff387623d8"},
+    {file = "satori_python_core-0.15.0.tar.gz", hash = "sha256:205f5a91b4d0cdcb7904deb0c14c547d2b35bea95c56e7bccab40cc1cf6c037a"},
 ]
 
 [[package]]
 name = "satori-python-server"
-version = "0.14.5"
+version = "0.15.0"
 requires_python = ">=3.8"
 summary = "Satori Protocol SDK for python, specify server part"
 dependencies = [
@@ -834,13 +835,13 @@ dependencies = [
     "graia-amnesia>=0.9.0",
     "launart>=0.8.2",
     "python-multipart>=0.0.9",
-    "satori-python-core>=0.11.4",
+    "satori-python-core>=0.15.0",
     "starlette[python-multipart]>=0.37.2",
     "uvicorn[standard]>=0.28.0",
 ]
 files = [
-    {file = "satori_python_server-0.14.5-py3-none-any.whl", hash = "sha256:03dcd662833783872f6907c787718fb2d713b879749413ef80b492ea228b8b35"},
-    {file = "satori_python_server-0.14.5.tar.gz", hash = "sha256:d20f7f71396094ff3df141ecdf3d1dc95b490dd422b2b2ca4398ccd931437843"},
+    {file = "satori_python_server-0.15.0-py3-none-any.whl", hash = "sha256:d76c07bef542547d7d62ccd9ee6d78fcd03936e4f4981bc43ae14d5a86457718"},
+    {file = "satori_python_server-0.15.0.tar.gz", hash = "sha256:d344ce3ec2012864e8a11f3968c815163dd71407b3164a502dae567fb3a15484"},
 ]
 
 [[package]]

@@ -16,7 +16,9 @@ from lagrange.info import InfoManager
 from lagrange.info.app import app_list
 from lagrange.client.client import Client
 from launart import Launart, any_completed
-from satori import User, Login, LoginStatus
+from satori import User, LoginStatus, Api
+from satori.model import LoginPreview
+from satori.server import Request
 from lagrange.utils.sign import sign_provider
 from lagrange.utils.audio.decoder import decode
 from graia.amnesia.builtins.memcache import MemcacheService
@@ -101,20 +103,19 @@ class NekoBoxAdapter(Adapter):
                 url = f"{url}{rkey}"
         return await super().download_proxied(prefix, url)
 
-    async def get_logins(self) -> List[Login]:
+    async def get_logins(self) -> List[LoginPreview]:
         return [
-            Login(
+            LoginPreview(
+                User(
+                    str(self.client.uin),
+                    name=self.name or str(self.client.uin),
+                    avatar=f"https://q1.qlogo.cn/g?b=qq&nk={self.client.uin}&s=640",
+                ),
+                PLATFORM,
                 (
                     (LoginStatus.ONLINE if self.client.online.is_set() else LoginStatus.CONNECT)
                     if not self.client._network._stop_flag
                     else LoginStatus.DISCONNECT
-                ),  # noqa
-                self_id=str(self.client.uin),
-                platform=PLATFORM,
-                user=User(
-                    str(self.client.uin),
-                    name=self.name or str(self.client.uin),
-                    avatar=f"https://q1.qlogo.cn/g?b=qq&nk={self.client.uin}&s=640",
                 ),
                 features=[
                     "message.delete",
@@ -193,6 +194,13 @@ class NekoBoxAdapter(Adapter):
             )
             apply_event_handler(client, self.queue)
             apply_api_handlers(self, client)
+
+            # special api handling
+            @self.route(Api.LOGIN_GET)
+            async def login_get(request: Request):
+                logins = await self.get_logins()
+                return logins[0]
+
             async with self.stage("preparing"):
                 client.connect()
                 success = True
@@ -218,7 +226,7 @@ class NekoBoxAdapter(Adapter):
             async with self.stage("blocking"):
                 if success:
                     im.save_all()
-                    self.name = (await client.get_user_info(uin=client.uin)).name
+                    self.name = (await client.get_user_info(client.uin)).name
                     await any_completed(manager.status.wait_for_sigexit(), client._network.wait_closed())
 
             async with self.stage("cleanup"):
