@@ -10,33 +10,19 @@ from graia.amnesia.builtins.memcache import MemcacheService
 from satori import (
     User,
     Guild,
-    Login,
     Member,
     Channel,
     PageResult,
     ChannelType,
-    LoginStatus,
     MessageObject,
     transform,
 )
 
-from ..consts import PLATFORM
 from ..uid import resolve_uid, save_uid
 from ..msgid import decode_msgid, encode_msgid
 from ..transformer import msg_to_satori, satori_to_msg
 
 logger = log.patch(lambda r: r.update(name="nekobox.apis"))
-
-
-async def login_get(client: Client, _request: Request[route.Login]):
-    return Login(
-        LoginStatus.ONLINE if client.online.is_set() else LoginStatus.OFFLINE,
-        self_id=str(client.uin),
-        platform=PLATFORM,
-        user=User(
-            str(client.uin), name=str(client.uin), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
-        ),
-    ).dump()
 
 
 async def channel_list(client: Client, request: Request[route.ChannelListParam]):
@@ -64,7 +50,8 @@ async def msg_create(client: Client, req: Request[route.MessageParam]):
                 logger.warning(f"uin {uin} not in cache, fetching from server")
                 friends = await client.get_friend_list()
                 for friend in friends:
-                    save_uid(friend.uin, friend.uid)
+                    if friend.uid:
+                        save_uid(friend.uin, friend.uid)
                 uid = resolve_uid(uin)
             rsp = await client.send_friend_msg(
                 await satori_to_msg(client, tp, uid=uid), uid
@@ -183,12 +170,13 @@ async def guild_member_get(client: Client, req: Request[route.GuildMemberGetPara
         while True:
             rsp = await client.get_grp_members(grp_id, next_key=next_key)
             for body in rsp.body:
-                if body.account.uin == user_id:
+                if body.account.uin is not None and body.account.uin == user_id:
                     save_uid(body.account.uin, body.account.uid)
-                    uid = body.account.uin
+                    uid = body.account.uid
                     break
             else:
-                next_key = rsp.next_key
+                if rsp.next_key is not None:
+                    next_key = rsp.next_key.decode()
             if not uid and not next_key:
                 raise ValueError(f"uin {user_id} not found in {grp_id}")
             elif uid:

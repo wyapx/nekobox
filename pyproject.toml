@@ -7,7 +7,7 @@ authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"}
 ]
 dependencies = [
-    "satori-python-server>=0.13.3",
+    "satori-python-server>=0.15.0",
     "lagrange-python>=0.1.3",
 ]
 requires-python = ">=3.9"
@@ -32,7 +32,7 @@ format = {composite = ["isort .", "black ."]}
 
 [tool.pdm.dev-dependencies]
 dev = [
-    "satori-python>=0.13.2",
+    "satori-python>=0.15.0",
     "pysilk-mod",
     "isort>=5.13.2",
     "black>=24.4.2",

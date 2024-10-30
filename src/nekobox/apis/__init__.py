@@ -7,7 +7,6 @@ from .types import API_HANDLER
 from .utils import register_api
 from .handler import (
     msg_get,
-    login_get,
     msg_create,
     msg_delete,
     friend_list,
@@ -35,7 +34,6 @@ ALL_APIS: List[Tuple[Api, API_HANDLER]] = [
     (Api.GUILD_LIST, guild_get_list),
     (Api.GUILD_MEMBER_GET, guild_member_get),
     (Api.GUILD_MEMBER_LIST, guild_member_list),
-    (Api.LOGIN_GET, login_get),
     (Api.CHANNEL_LIST, channel_list),
     (Api.USER_CHANNEL_CREATE, friend_channel),
     (Api.GUILD_MEMBER_APPROVE, guild_member_req_approve),
