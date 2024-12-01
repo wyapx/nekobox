@@ -27,11 +27,11 @@ ul = "\033[4m"
 bd = "\033[1m"
 
 
-def run(uin: int, host: str, port: int, token: str, path: str, protocol: str, sign_url: str, level: str):
+def run(uin: int, host: str, port: int, token: str, path: str, protocol: str, sign_url: str, level: str, use_png: bool):
     loop = it(asyncio.AbstractEventLoop)
     loop.set_exception_handler(loguru_exc_callback_async)
     server = Server(host=host, port=port, path=path, stream_threshold=4 * 1024 * 1024)
-    server.apply(NekoBoxAdapter(uin, token, sign_url, protocol, level))  # type: ignore
+    server.apply(NekoBoxAdapter(uin, token, sign_url, protocol, level, use_png))  # type: ignore
     server.run()
 
 
@@ -182,7 +182,7 @@ def _run(args):
     protocol = cfg[uin]["protocol"]
     level = "DEBUG" if args.debug else cfg[uin]["log_level"]
     logger.success("读取配置文件完成")
-    run(int(uin), host, port, token, path, protocol, sign_url, level)
+    run(int(uin), host, port, token, path, protocol, sign_url, level, args.use_png)
 
 
 def _show(args):
@@ -277,6 +277,7 @@ def main():
     run_parser = command.add_parser("run", help="启动服务器")
     run_parser.add_argument("uin", type=str, nargs="?", help="选择账号; 输入 '?' 以交互式选择账号")
     run_parser.add_argument("--debug", action="store_true", default=False, help="强制启用调试等级日志")
+    run_parser.add_argument("--file-qrcode", "-Q", dest="use_png", action="store_true", default=False, help="使用文件保存二维码")
     run_parser.set_defaults(func=_run)
     gen_parser = command.add_parser("gen", help="生成或更新配置文件")
     gen_parser.add_argument("uin", type=str, nargs="?", help="选择账号")
