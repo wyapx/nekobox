@@ -30,8 +30,8 @@ bd = "\033[1m"
 def run(uin: int, host: str, port: int, token: str, path: str, protocol: str, sign_url: str, level: str, use_png: bool):
     loop = it(asyncio.AbstractEventLoop)
     loop.set_exception_handler(loguru_exc_callback_async)
-    server = Server(host=host, port=port, path=path, stream_threshold=4 * 1024 * 1024)
-    server.apply(NekoBoxAdapter(uin, token, sign_url, protocol, level, use_png))  # type: ignore
+    server = Server(host=host, port=port, path=path, token=token, stream_threshold=4 * 1024 * 1024)
+    server.apply(NekoBoxAdapter(uin, sign_url, protocol, level, use_png))  # type: ignore
     server.run()
 
 
@@ -112,7 +112,7 @@ def generate_cfg(args):
         cfg.add_section(uin)
     set_cfg(cfg, uin, "sign", "Bot 的 SignUrl")
     set_cfg(cfg, uin, "protocol", "Bot 的协议类型", default="linux", unique=["linux", "macos", "windows"])
-    set_cfg(cfg, uin, "token", "Satori 的验证 token", default=secrets.token_hex(8))
+    set_cfg(cfg, uin, "token", "Satori 服务器的验证 token", default=secrets.token_hex(8))
     set_cfg(cfg, uin, "host", "Satori 服务器绑定地址", default="127.0.0.1")
     set_cfg(cfg, uin, "port", "Satori 服务器绑定端口", default="7777")
     set_cfg(cfg, uin, "path", "Satori 服务器部署路径 (可以为空)", default="")

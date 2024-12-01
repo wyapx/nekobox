@@ -5,7 +5,7 @@
 groups = ["default", "audio", "dev"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:2f508dbc86ea2d7e37e45768bedd766ee57125b21f0aaaf12aa9dc8a62e680ea"
+content_hash = "sha256:b232f62aea96e18b741bc27b2d57b7720090a3774e5d2f03c7e838371323daa2"
 
 [[metadata.targets]]
 requires_python = ">=3.9"
@@ -791,7 +791,7 @@ files = [
 
 [[package]]
 name = "satori-python"
-version = "0.15.0"
+version = "0.15.1"
 requires_python = ">=3.9"
 summary = "Satori Protocol SDK for python"
 dependencies = [
@@ -806,8 +806,8 @@ dependencies = [
     "yarl>=1.9.4",
 ]
 files = [
-    {file = "satori_python-0.15.0-py3-none-any.whl", hash = "sha256:c648b297b10defed0447569c2e22eff4c2b33dd0c52c359f4c292153b9990429"},
-    {file = "satori_python-0.15.0.tar.gz", hash = "sha256:58a97fcc2b835d48c88d4892acdf85b4f3d1fb7367ff30966ae788f2294671a6"},
+    {file = "satori_python-0.15.1-py3-none-any.whl", hash = "sha256:1875ee8b1cd2f4d03e4c780e0babd6f12883ac69f0a2cfbccd1e535a43e3172f"},
+    {file = "satori_python-0.15.1.tar.gz", hash = "sha256:acc4a9fab4661e7a23cb6c5595a17dc17c353967000a86f2e99c7d08310a3b27"},
 ]
 
 [[package]]
@@ -827,7 +827,7 @@ files = [
 
 [[package]]
 name = "satori-python-server"
-version = "0.15.0"
+version = "0.15.1"
 requires_python = ">=3.8"
 summary = "Satori Protocol SDK for python, specify server part"
 dependencies = [
@@ -840,8 +840,8 @@ dependencies = [
     "uvicorn[standard]>=0.28.0",
 ]
 files = [
-    {file = "satori_python_server-0.15.0-py3-none-any.whl", hash = "sha256:d76c07bef542547d7d62ccd9ee6d78fcd03936e4f4981bc43ae14d5a86457718"},
-    {file = "satori_python_server-0.15.0.tar.gz", hash = "sha256:d344ce3ec2012864e8a11f3968c815163dd71407b3164a502dae567fb3a15484"},
+    {file = "satori_python_server-0.15.1-py3-none-any.whl", hash = "sha256:c47426bb9a041ff210994bc965452dfba44b8e2f8af27160e12762f360e07778"},
+    {file = "satori_python_server-0.15.1.tar.gz", hash = "sha256:a5a1334f6b95907523b9cdc2f92cfb12ada3441ae2ba36ef072b572edd37023c"},
 ]
 
 [[package]]

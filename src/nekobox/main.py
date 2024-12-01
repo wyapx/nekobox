@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import urllib.parse
 from io import BytesIO
 from pathlib import Path
 from contextlib import suppress
@@ -60,12 +59,6 @@ class NekoBoxAdapter(Adapter):
     def ensure(self, platform: str, self_id: str) -> bool:
         # upload://{platform}/{self_id}/{path}...
         return platform == PLATFORM and self_id == str(self.uin)
-
-    def authenticate(self, token: str | None) -> bool:
-        if self.access_token and token != self.access_token:
-            logger.warning("Authentication failed, check upstream token setting.")
-            return False
-        return True
 
     async def download_uploaded(self, platform: str, self_id: str, path: str) -> bytes:
         res_typ, src_typ, src, key = path.split("/", 3)
@@ -131,13 +124,11 @@ class NekoBoxAdapter(Adapter):
     def __init__(
         self,
         uin: int,
-        access_token: str,
         sign_url: str | None = None,
         protocol: Literal["linux", "macos", "windows"] = "linux",
         log_level: str = "INFO",
         use_png: bool = False,
     ):
-        self.access_token = access_token
         self.log_level = log_level.upper()
 
         scope = Path.cwd() / "bots" / str(uin)
@@ -165,7 +156,7 @@ class NekoBoxAdapter(Adapter):
         png, link = fetch_rsp
         if self.use_png:
             path = Path.cwd() / "login_qrcode.png"
-            logger.info(f"save qrcode to '{path.resolve()}'")
+            logger.info(f"save QRCode to '{path.resolve()}'")
             with open(path, "wb+") as f:
                 f.write(png)
         else:
