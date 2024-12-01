@@ -17,7 +17,7 @@ from lagrange.info.app import app_list
 from lagrange.client.client import Client
 from launart import Launart, any_completed
 from satori import User, LoginStatus, Api
-from satori.model import LoginPreview
+from satori.model import LoginPreview, LoginType
 from satori.server import Request
 from lagrange.utils.sign import sign_provider
 from lagrange.utils.audio.decoder import decode
@@ -103,7 +103,7 @@ class NekoBoxAdapter(Adapter):
                 url = f"{url}{rkey}"
         return await super().download_proxied(prefix, url)
 
-    async def get_logins(self) -> List[LoginPreview]:
+    async def get_logins(self) -> List[LoginType]:
         return [
             LoginPreview(
                 User(
@@ -135,6 +135,7 @@ class NekoBoxAdapter(Adapter):
         sign_url: str | None = None,
         protocol: Literal["linux", "macos", "windows"] = "linux",
         log_level: str = "INFO",
+        use_png: bool = False,
     ):
         self.access_token = access_token
         self.log_level = log_level.upper()
@@ -148,6 +149,7 @@ class NekoBoxAdapter(Adapter):
         self.info = app_list[protocol]
         self.sign = sign_provider(sign_url) if sign_url else None
         self.queue = asyncio.Queue()
+        self.use_png = use_png
         super().__init__()
 
     client: Client
@@ -156,17 +158,22 @@ class NekoBoxAdapter(Adapter):
     def stages(self) -> Set[Literal["preparing", "blocking", "cleanup"]]:
         return {"preparing", "blocking", "cleanup"}
 
-    async def qrlogin(self, client) -> bool:
+    async def qrlogin(self, client: Client) -> bool:
         fetch_rsp = await client.fetch_qrcode()
         if isinstance(fetch_rsp, int):
             raise AssertionError(f"Failed to fetch QR code: {fetch_rsp}")
-        _, link = fetch_rsp
-        logger.debug(link[:-34])
-        qr = QRCode()
-        qr.add_data(link)
+        png, link = fetch_rsp
+        if self.use_png:
+            path = Path.cwd() / "login_qrcode.png"
+            logger.info(f"save qrcode to '{path.resolve()}'")
+            with open(path, "wb+") as f:
+                f.write(png)
+        else:
+            logger.debug(f"QR code link: <link>{link}</link>")
+            qr = QRCode()
+            qr.add_data(link)
+            qr.print_ascii()
         logger.info("Please use Tencent QQ to scan QR code")
-        qr.print_ascii()
-
         try:
             return await client.qrcode_login(3)
         except AssertionError as e:
