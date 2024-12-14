@@ -203,6 +203,8 @@ class NekoBoxAdapter(Adapter):
                 logins = await self.get_logins()
                 return logins[0]
 
+            patch_logging(self.log_level)
+
             async with self.stage("preparing"):
                 client.connect()
                 success = True
@@ -216,14 +218,12 @@ class NekoBoxAdapter(Adapter):
                     success = await client.easy_login()
                 else:
                     success = False
-
-            patch_logging(self.log_level)
-            if not success:
-                if not await self.qrlogin(client):
-                    logger.error("login error")
-                else:
-                    await self.client.register()
-                    success = True
+                if not success:
+                    if not await self.qrlogin(client):
+                        logger.error("login error")
+                    else:
+                        await self.client.register()
+                        success = True
 
             async with self.stage("blocking"):
                 if success:
