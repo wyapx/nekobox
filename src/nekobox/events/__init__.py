@@ -15,7 +15,7 @@ from lagrange.client.events.group import (
     GroupMemberJoinRequest,
 )
 
-from .utils import event_register
+from .utils import event_register, LOGIN_GETTER
 from .handler import (
     on_grp_msg,
     on_friend_msg,
@@ -45,6 +45,6 @@ ALL_EVENT_HANDLERS = [
 ]
 
 
-def apply_event_handler(client: Client, queue: asyncio.Queue[Event]):
+def apply_event_handler(client: Client, queue: asyncio.Queue[Event], login_getter: LOGIN_GETTER):
     for event, ev_handler in ALL_EVENT_HANDLERS:
-        event_register(client, queue, event, ev_handler)
+        event_register(client, queue, event, ev_handler, login_getter)

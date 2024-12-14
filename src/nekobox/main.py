@@ -4,7 +4,7 @@ import asyncio
 from io import BytesIO
 from pathlib import Path
 from contextlib import suppress
-from typing import Set, List, Literal
+from typing import Set, List, Literal, Optional
 from datetime import datetime, timedelta
 
 from loguru import logger
@@ -16,10 +16,11 @@ from lagrange.info.app import app_list
 from lagrange.client.client import Client
 from launart import Launart, any_completed
 from satori import User, LoginStatus, Api
-from satori.model import LoginPreview, LoginType
+from satori.model import Login
 from satori.server import Request
 from lagrange.utils.sign import sign_provider
 from lagrange.utils.audio.decoder import decode
+from starlette.responses import Response
 from graia.amnesia.builtins.memcache import MemcacheService
 
 from .consts import PLATFORM
@@ -60,32 +61,32 @@ class NekoBoxAdapter(Adapter):
         # upload://{platform}/{self_id}/{path}...
         return platform == PLATFORM and self_id == str(self.uin)
 
-    async def download_uploaded(self, platform: str, self_id: str, path: str) -> bytes:
-        res_typ, src_typ, src, key = path.split("/", 3)
-        if res_typ == "audio":
-            if src_typ == "gid":
-                link = await self.client.fetch_audio_url(key, gid=int(src))
-            elif src_typ == "uid":
-                link = await self.client.fetch_audio_url(key, uid=src)
-            else:
-                raise KeyError(f"Unknown source type: {src_typ}")
-            raw = await HttpCatProxies.request(
-                "GET",
-                link.replace("https", "http"),  # multimedia server certificate check failure
-                conn_timeout=15
-            )
-            if raw.code != 200:
-                raise ConnectionError(raw.code, raw.text())
-            data = raw.decompressed_body
-            typ = decode(BytesIO(data))
-            if decode_audio_available(typ.type):
-                return await decode_audio(typ.type, data)
-            else:
-                return data
-        else:
-            raise NotImplementedError(res_typ)
+    async def handle_internal(self, request: Request, path: str) -> Response:
+        if not path.startswith("_raw"):
+            res_typ, src_typ, src, key = path.split("/", 3)
+            if res_typ == "audio":
+                if src_typ == "gid":
+                    link = await self.client.fetch_audio_url(key, gid=int(src))
+                elif src_typ == "uid":
+                    link = await self.client.fetch_audio_url(key, uid=src)
+                else:
+                    raise ValueError(f"Unknown source type: {src_typ}")
+                raw = await HttpCatProxies.request(
+                    "GET",
+                    link.replace("https", "http"),  # multimedia server certificate check failure
+                    conn_timeout=15
+                )
+                if raw.code != 200:
+                    raise ConnectionError(raw.code, raw.text())
+                data = raw.decompressed_body
+                typ = decode(BytesIO(data))
+                if decode_audio_available(typ.type):
+                    return Response(await decode_audio(typ.type, data))
+                else:
+                    return Response(data)
+        raise NotImplementedError(path)
 
-    async def download_proxied(self, prefix: str, url: str) -> bytes:
+    async def handle_proxied(self, prefix: str, url: str) -> Optional[Response]:
         url = url.replace("&amp;", "&")
         if prefix == "https://multimedia.nt.qq.com.cn/":
             _, rkey = await self.client.get_rkey()
@@ -94,28 +95,31 @@ class NekoBoxAdapter(Adapter):
             if url.startswith("https://gchat.qpic.cn/download"):
                 _, rkey = await self.client.get_rkey()
                 url = f"{url}{rkey}"
-        return await super().download_proxied(prefix, url)
+        return await super().handle_proxied(prefix, url)
 
-    async def get_logins(self) -> List[LoginType]:
-        return [
-            LoginPreview(
-                User(
-                    str(self.client.uin),
-                    name=self.name or str(self.client.uin),
-                    avatar=f"https://q1.qlogo.cn/g?b=qq&nk={self.client.uin}&s=640",
-                ),
-                PLATFORM,
-                (
-                    (LoginStatus.ONLINE if self.client.online.is_set() else LoginStatus.CONNECT)
-                    if not self.client._network._stop_flag
-                    else LoginStatus.DISCONNECT
-                ),
-                features=[
-                    "message.delete",
-                    "guild.plain",
-                ],
-            )
-        ]
+    def _get_login(self):
+        return Login(
+            str(self.client.uin),
+            (
+                (LoginStatus.ONLINE if self.client.online.is_set() else LoginStatus.CONNECT)
+                if not self.client._network._stop_flag
+                else LoginStatus.DISCONNECT
+            ),
+            "nekobox",
+            PLATFORM,
+            User(
+                str(self.client.uin),
+                name=self.name or str(self.client.uin),
+                avatar=f"https://q1.qlogo.cn/g?b=qq&nk={self.client.uin}&s=640",
+            ),
+            features=[
+                "message.delete",
+                "guild.plain",
+            ],
+        )
+
+    async def get_logins(self) -> List[Login]:
+        return [self._get_login()]
 
     @property
     def required(self) -> Set[str]:
@@ -190,7 +194,7 @@ class NekoBoxAdapter(Adapter):
                 im.sig_info,
                 self.sign,
             )
-            apply_event_handler(client, self.queue)
+            apply_event_handler(client, self.queue, self._get_login)
             apply_api_handlers(self, client)
 
             # special api handling

@@ -31,7 +31,6 @@ from lagrange.client.events.group import (
     GroupMemberJoinRequest,
 )
 
-from ..consts import PLATFORM
 from ..msgid import encode_msgid
 from ..transformer import msg_to_satori
 from ..uid import save_uid, resolve_uin, resolve_uid
@@ -50,7 +49,7 @@ def escape_tag(s: str) -> str:
     return re.sub(r"</?((?:[fb]g\s)?[^<>\s]*)>", r"\\\g<0>", s)
 
 
-async def on_grp_msg(client: Client, event: GroupMessage) -> Optional[Event]:
+async def on_grp_msg(client: Client, event: GroupMessage, login: Login) -> Optional[Event]:
     save_uid(event.uin, event.uid)
     content = await msg_to_satori(event.msg_chain, client.uin, gid=event.grp_id)
     msg = "".join(str(i) for i in content)
@@ -72,11 +71,9 @@ async def on_grp_msg(client: Client, event: GroupMessage) -> Optional[Event]:
     await cache.set(f"user@{usr.id}", usr, timedelta(minutes=5))
     await cache.set(f"member@{guild.id}#{usr.id}", member, timedelta(minutes=5))
     return Event(
-        0,
         EventType.MESSAGE_CREATED,
         datetime.fromtimestamp(event.time),
-        PLATFORM,
-        str(client.uin),
+        login,
         channel=channel,
         guild=guild,
         user=usr,
@@ -85,7 +82,7 @@ async def on_grp_msg(client: Client, event: GroupMessage) -> Optional[Event]:
     )
 
 
-async def on_grp_recall(client: Client, event: GroupRecall) -> Optional[Event]:
+async def on_grp_recall(client: Client, event: GroupRecall, login: Login) -> Optional[Event]:
     uin = resolve_uin(event.uid)
     cache = Launart.current().get_component(MemcacheService).cache
     usr = await cache.get(f"user@{uin}")
@@ -123,11 +120,9 @@ async def on_grp_recall(client: Client, event: GroupRecall) -> Optional[Event]:
 
     logger.info(f"[message-deleted] {usr.nick}({usr.id})@{guild.id}: {event.seq}")
     return Event(
-        0,
         EventType.MESSAGE_DELETED,
         datetime.fromtimestamp(event.time),
-        PLATFORM,
-        str(client.uin),
+        login,
         channel=channel,
         guild=guild,
         user=usr,
@@ -136,7 +131,7 @@ async def on_grp_recall(client: Client, event: GroupRecall) -> Optional[Event]:
     )
 
 
-async def on_friend_msg(client: Client, event: FriendMessage) -> Optional[Event]:
+async def on_friend_msg(client: Client, event: FriendMessage, login: Login) -> Optional[Event]:
     save_uid(event.from_uin, event.from_uid)
     content = await msg_to_satori(event.msg_chain, client.uin, uid=event.from_uid)
     msg = "".join(str(i) for i in content)
@@ -161,68 +156,36 @@ async def on_friend_msg(client: Client, event: FriendMessage) -> Optional[Event]
         )
     logger.info(f"[message-created] {user.nick or user.name}({user.id}): {escape_tag(msg)!r}")
     return Event(
-        0,
         EventType.MESSAGE_CREATED,
         datetime.fromtimestamp(event.timestamp),
-        PLATFORM,
-        str(client.uin),
+        login,
         user=user,
         channel=Channel(encode_msgid(2, event.from_uin), ChannelType.DIRECT, user.name),
         message=MessageObject.from_elements(str(event.seq), content),
     )
 
 
-async def on_client_online(client: Client, event: ClientOnline) -> Optional[Event]:
+async def on_client_online(client: Client, event: ClientOnline, login: Login) -> Optional[Event]:
     logger.debug("[login-updated]: online")
+    login.status = LoginStatus.ONLINE
     return Event(
-        0,
         EventType.LOGIN_UPDATED,
         datetime.now(),
-        PLATFORM,
-        str(client.uin),
-        login=Login(
-            LoginStatus.ONLINE,
-            self_id=str(client.uin),
-            platform=PLATFORM,
-            user=User(
-                str(client.uin),
-                name=str(client.uin),
-                avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640",
-            ),
-            features=[
-                "message.delete",
-                "guild.plain",
-            ],
-        ),
+        login,
     )
 
 
-async def on_client_offline(client: Client, event: ClientOffline) -> Optional[Event]:
+async def on_client_offline(client: Client, event: ClientOffline, login: Login) -> Optional[Event]:
     logger.debug(f"[login-updated]: {'reconnect' if event.recoverable else 'disconnect'}")
+    login.status = LoginStatus.RECONNECT if event.recoverable else LoginStatus.DISCONNECT
     return Event(
-        0,
         EventType.LOGIN_UPDATED,
         datetime.now(),
-        PLATFORM,
-        str(client.uin),
-        login=Login(
-            LoginStatus.RECONNECT if event.recoverable else LoginStatus.DISCONNECT,
-            self_id=str(client.uin),
-            platform=PLATFORM,
-            user=User(
-                str(client.uin),
-                name=str(client.uin),
-                avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640",
-            ),
-            features=[
-                "message.delete",
-                "guild.plain",
-            ],
-        ),
+        login,
     )
 
 
-async def on_grp_name_changed(client: Client, event: GroupNameChanged) -> Event:
+async def on_grp_name_changed(client: Client, event: GroupNameChanged, login: Login) -> Event:
     operator_id = resolve_uin(event.operator_uid)
     cache = Launart.current().get_component(MemcacheService).cache
     guild = Guild(
@@ -246,11 +209,9 @@ async def on_grp_name_changed(client: Client, event: GroupNameChanged) -> Event:
         await cache.set(f"member@{event.grp_id}#{operator_id}", operator, timedelta(minutes=5))
     logger.info(f"[guild-updated] {operator.nick} changed the group name to {event.name_new}")
     return Event(
-        0,
         EventType.GUILD_UPDATED,
         datetime.now(),
-        PLATFORM,
-        str(client.uin),
+        login,
         guild=guild,
         user=User(
             str(client.uin), str(client.uin), avatar=f"https://q1.qlogo.cn/g?b=qq&nk={client.uin}&s=640"
@@ -259,7 +220,7 @@ async def on_grp_name_changed(client: Client, event: GroupNameChanged) -> Event:
     )
 
 
-async def on_member_joined(client: Client, event: Union[GroupMemberJoined, GroupMemberJoinedByInvite]) -> Event:
+async def on_member_joined(client: Client, event: Union[GroupMemberJoined, GroupMemberJoinedByInvite], login: Login) -> Event:
     cache = Launart.current().get_component(MemcacheService).cache
     try:
         if isinstance(event, GroupMemberJoined):
@@ -298,18 +259,16 @@ async def on_member_joined(client: Client, event: Union[GroupMemberJoined, Group
             )
     logger.info(f"[guild-member-added] {member.nick}({uin}) joined {guild.name}({guild.id})")
     return Event(
-        0,
         EventType.GUILD_MEMBER_ADDED,
         datetime.now(),
-        PLATFORM,
-        str(client.uin),
+        login,
         guild=guild,
         member=member,
         user=member.user,
     )
 
 
-async def on_member_quit(client: Client, event: GroupMemberQuit) -> Optional[Event]:
+async def on_member_quit(client: Client, event: GroupMemberQuit, login: Login) -> Optional[Event]:
     cache = Launart.current().get_component(MemcacheService).cache
     member = await cache.get(f"member@{event.grp_id}#{event.uin}")
     if not member:
@@ -358,11 +317,9 @@ async def on_member_quit(client: Client, event: GroupMemberQuit) -> Optional[Eve
         f"{f'by {operator.nick}({operator.user.id})' if operator else ''}"  # type: ignore
     )
     return Event(
-        0,
         EventType.GUILD_MEMBER_REMOVED,
         datetime.now(),
-        PLATFORM,
-        str(client.uin),
+        login,
         guild=guild,
         member=member,
         user=member.user,
@@ -370,7 +327,7 @@ async def on_member_quit(client: Client, event: GroupMemberQuit) -> Optional[Eve
     )
 
 
-async def on_grp_member_request(client: Client, event: GroupMemberJoinRequest) -> Optional[Event]:
+async def on_grp_member_request(client: Client, event: GroupMemberJoinRequest, login: Login) -> Optional[Event]:
     reqs = await client.fetch_grp_request(4)
     for req in reqs.requests:
         if req.group.grp_id == event.grp_id and req.target.uid == event.uid:
@@ -388,11 +345,9 @@ async def on_grp_member_request(client: Client, event: GroupMemberJoinRequest) -
     await cache.set(f"guild@{event.grp_id}", guild, timedelta(minutes=5))
     logger.info(f"[guild-member-request] {user.nick}({user.id}) requested to join {guild.name}({guild.id})")
     return Event(
-        0,
         EventType.GUILD_MEMBER_REQUEST,
         datetime.now(),
-        PLATFORM,
-        str(client.uin),
+        login,
         guild=guild,
         user=user,
         member=Member(user, user.name),
@@ -400,7 +355,7 @@ async def on_grp_member_request(client: Client, event: GroupMemberJoinRequest) -
     )
 
 
-async def on_grp_reaction(client: Client, event: GroupReaction) -> Optional[Event]:
+async def on_grp_reaction(client: Client, event: GroupReaction, login: Login) -> Optional[Event]:
     user_id = resolve_uin(event.uid)
 
     if event.is_emoji:
@@ -439,11 +394,9 @@ async def on_grp_reaction(client: Client, event: GroupReaction) -> Optional[Even
         action = "removed"
     logger.info(f"[reaction-{action}] {member.nick}({user_id}) reacted {emoji} to message {event.seq}")
     return Event(
-        0,
         EventType.REACTION_ADDED if event.is_increase else EventType.REACTION_REMOVED,
         datetime.now(),
-        PLATFORM,
-        str(client.uin),
+        login,
         guild=guild,
         user=member.user,
         member=member,
