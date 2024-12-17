@@ -23,8 +23,8 @@ from lagrange.utils.audio.decoder import decode
 from starlette.responses import Response
 from graia.amnesia.builtins.memcache import MemcacheService
 
-from .consts import PLATFORM
-from .utils import cx_server, HttpCatProxies, decode_audio_available, decode_audio
+from .consts import PLATFORM, _set_server
+from .utils import HttpCatProxies, decode_audio_available, decode_audio
 from .log import patch_logging
 from .apis import apply_api_handlers
 from .events import apply_event_handler
@@ -176,8 +176,9 @@ class NekoBoxAdapter(Adapter):
             return False
 
     async def launch(self, manager: Launart):
+
         logger.info(f"Running on '{version.__version__}' for {self.uin}")
-        tk = cx_server.set(self.server)
+        _set_server(self.server)
 
         with self.im as im:
             if (
@@ -237,4 +238,3 @@ class NekoBoxAdapter(Adapter):
 
             logger.success("Client stopped")
 
-        cx_server.reset(tk)

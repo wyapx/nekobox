@@ -22,9 +22,10 @@ from lagrange.client.message.types import Element
 from satori.element import Custom as SatoriCustom
 from satori.element import Paragraph as SatoriParagraph
 from lagrange.client.message.elems import At, Text, AtAll, Audio, Image, Quote, MarketFace
+from starlette.responses import FileResponse
 
-from .consts import PLATFORM
-from .utils import cx_server, get_public_ip, transform_audio, download_resource
+from .consts import PLATFORM, get_server
+from .utils import get_public_ip, transform_audio, download_resource
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -59,6 +60,15 @@ def decode_data_url(url: str) -> Tuple[str, bytes]:
 
 async def parse_resource(url: str) -> bytes:
     logger.debug(f"loading resource: {url[:80]}")
+    if url.startswith("internal:"):
+        server = get_server()
+        if not server:
+            raise ValueError("No server found")
+        resp = await server.fetch_proxy(url)
+        if isinstance(resp, FileResponse):
+            with open(resp.path, "rb") as f:
+                return f.read()
+        return bytes(resp.body)
     if url.find("http") == 0:
         return await download_resource(url)
     elif url.find("data") == 0:
@@ -74,7 +84,7 @@ async def parse_resource(url: str) -> bytes:
         with open(path, "rb") as f:
             return f.read()
     else:
-        raise ValueError("Unsupported URL: %s" % url)
+        raise ValueError(f"Unsupported URL: {url}")
 
 
 async def msg_to_satori(msgs: List[Element], self_uin: int, gid=None, uid=None) -> List[SatoriElement]:
@@ -90,7 +100,7 @@ async def msg_to_satori(msgs: List[Element], self_uin: int, gid=None, uid=None) 
             url = URL(m.url.replace("&amp;", "&"))
             if "rkey" in url.query:
                 url = url.with_query({k: v for k, v in url.query.items() if k != "rkey"})
-                if server := cx_server.get(None):
+                if server := get_server():
                     url = URL(server.url_base) / "proxy" / str(url)
                     if url.host == "0.0.0.0":
                         url = url.with_host(get_public_ip())
@@ -99,7 +109,7 @@ async def msg_to_satori(msgs: List[Element], self_uin: int, gid=None, uid=None) 
             assert gid or uid, "gid or uid must be specified"
             new_msg.append(
                 SatoriAudio(
-                    f"upload://{PLATFORM}/{self_uin}"
+                    f"internal:{PLATFORM}/{self_uin}"
                     f"/audio/{'gid' if gid else 'uid'}/{gid or uid}/{m.file_key}",
                     title=m.text,
                     duration=m.time

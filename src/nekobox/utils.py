@@ -186,6 +186,3 @@ def decode_audio_available(typ: AudioType) -> bool:
         else:
             return True
     return False
-
-
-cx_server: ContextVar[Server] = ContextVar("server")
