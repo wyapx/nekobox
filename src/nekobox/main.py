@@ -235,8 +235,12 @@ class NekoBoxAdapter(Adapter):
                     if not await self.qrlogin(client):
                         logger.error("login error")
                     else:
-                        await self.client.register()
-                        success = True
+                        if self.client.uin != self.uin:
+                            logger.critical("Profile not matched!")
+                            logger.critical(f"'{self.uin}' required, but '{self.client.uin}' got")
+                            im.renew_sig_info()  # flush
+                        else:
+                            success = await self.client.register()
 
             async with self.stage("blocking"):
                 if success:
