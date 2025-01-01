@@ -12,7 +12,7 @@ from lagrange import version
 from qrcode.main import QRCode
 from satori.server import Adapter
 from lagrange.info import InfoManager
-from lagrange.info.app import app_list
+from lagrange.info.app import AppInfo, app_list
 from lagrange.client.client import Client
 from launart import Launart, any_completed
 from satori import User, LoginStatus, Api
@@ -129,7 +129,7 @@ class NekoBoxAdapter(Adapter):
         self,
         uin: int,
         sign_url: str | None = None,
-        protocol: Literal["linux", "macos", "windows"] = "linux",
+        protocol: Literal["linux", "macos", "windows", "remote"] = "linux",
         log_level: str = "INFO",
         use_png: bool = False,
     ):
@@ -141,10 +141,12 @@ class NekoBoxAdapter(Adapter):
         self.im = InfoManager(uin, scope / "device.json", scope / "sig.bin")
         self.uin = uin
         self.name = ""
-        self.info = app_list[protocol]
         self.sign = sign_provider(sign_url) if sign_url else None
         self.queue = asyncio.Queue()
         self.use_png = use_png
+
+        self._protocol = protocol
+        self._sign_url = sign_url
         super().__init__()
 
     client: Client
@@ -188,9 +190,19 @@ class NekoBoxAdapter(Adapter):
                 logger.warning("siginfo expired")
                 im.renew_sig_info()
 
+            if self._protocol == "remote":
+                url = self._sign_url + "/appinfo"  # appinfo endpoint
+                logger.debug("load remote protocol from %s" % url)
+                rsp = await HttpCatProxies.request("GET", url)
+
+                app_info = AppInfo.load_custom(rsp.json())
+            else:
+                app_info = app_list[self._protocol]
+            logger.info(f"AppInfo: platform={app_info.os}, ver={app_info.build_version}({app_info.sub_app_id})")
+
             self.client = client = Client(
                 self.uin,
-                self.info,
+                app_info,
                 im.device,
                 im.sig_info,
                 self.sign,

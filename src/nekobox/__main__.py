@@ -111,7 +111,7 @@ def generate_cfg(args):
     if uin not in cfg:
         cfg.add_section(uin)
     set_cfg(cfg, uin, "sign", "Bot 的 SignUrl")
-    set_cfg(cfg, uin, "protocol", "Bot 的协议类型", default="linux", unique=["linux", "macos", "windows"])
+    set_cfg(cfg, uin, "protocol", "Bot 的协议类型（默认跟随签名服务器）", default="remote", unique=["linux", "macos", "windows", "remote"])
     set_cfg(cfg, uin, "token", "Satori 服务器的验证 token", default=secrets.token_hex(8))
     set_cfg(cfg, uin, "host", "Satori 服务器绑定地址", default="127.0.0.1")
     set_cfg(cfg, uin, "port", "Satori 服务器绑定端口", default="7777")

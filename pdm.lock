@@ -491,11 +491,11 @@ files = [
 
 [[package]]
 name = "lagrange-python"
-version = "0.1.5"
+version = "0.1.6"
 requires_python = ">=3.9"
 git = "https://github.com/LagrangeDev/lagrange-python"
 ref = "broken"
-revision = "4f7986fdeddb76bfec92b88fb9b32bc6a56e58b1"
+revision = "a79970936c9209841aa3528f0561793df6915670"
 summary = "An Python Implementation of NTQQ PC Protocol"
 dependencies = [
     "cryptography>=40.0.0",
@@ -791,7 +791,7 @@ files = [
 
 [[package]]
 name = "satori-python"
-version = "0.16.1"
+version = "0.16.2"
 requires_python = ">=3.9"
 summary = "Satori Protocol SDK for python"
 dependencies = [
@@ -806,8 +806,8 @@ dependencies = [
     "yarl>=1.9.4",
 ]
 files = [
-    {file = "satori_python-0.16.1-py3-none-any.whl", hash = "sha256:f55d880791eae869ab7666885a49beb1593f98a7dd937b7399c5b588a42584f9"},
-    {file = "satori_python-0.16.1.tar.gz", hash = "sha256:5325101b90101b8068e91285997181ade1ce5f106747d54d075069b5ca07e64a"},
+    {file = "satori_python-0.16.2-py3-none-any.whl", hash = "sha256:b0538254d533d375045bc97037a543e5b88760bddc63f23093a65940acf21ba8"},
+    {file = "satori_python-0.16.2.tar.gz", hash = "sha256:8cf544cb4c73e32d1ead379f68bfbe36a55d11cb06b02d8029b6fb7474246e81"},
 ]
 
 [[package]]
@@ -827,7 +827,7 @@ files = [
 
 [[package]]
 name = "satori-python-server"
-version = "0.16.1"
+version = "0.16.2"
 requires_python = ">=3.9"
 summary = "Satori Protocol SDK for python, specify server part"
 dependencies = [
@@ -840,8 +840,8 @@ dependencies = [
     "uvicorn[standard]>=0.28.0",
 ]
 files = [
-    {file = "satori_python_server-0.16.1-py3-none-any.whl", hash = "sha256:ab2230d908d37c5b911ea2b1625e471c682945104a8880d450af38202fc82119"},
-    {file = "satori_python_server-0.16.1.tar.gz", hash = "sha256:a5bae51af252da57acf66a06a1744d692ed0ba914d5533a9918a034da05cb337"},
+    {file = "satori_python_server-0.16.2-py3-none-any.whl", hash = "sha256:896ad9d5361a8d449f38c5ab58a90873d7d22425dff445ed564929c4a883745e"},
+    {file = "satori_python_server-0.16.2.tar.gz", hash = "sha256:6a90e1cc4ee12eb41837299deb6301aeb173056a07e1dddd5cd2f67a95b665aa"},
 ]
 
 [[package]]
