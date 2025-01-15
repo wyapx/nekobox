@@ -6,13 +6,11 @@ import warnings
 from io import BytesIO
 from shutil import which
 from typing import BinaryIO
-from contextvars import ContextVar
 from urllib.request import getproxies
 from tempfile import TemporaryDirectory
 
 from lagrange.utils.audio.enum import AudioType
 from loguru import logger
-from satori.server import Server
 from lagrange.utils.audio.decoder import decode
 from lagrange.utils.httpcat import HttpCat, HttpResponse
 

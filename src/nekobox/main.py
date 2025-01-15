@@ -99,7 +99,7 @@ class NekoBoxAdapter(Adapter):
 
     def _get_login(self):
         return Login(
-            str(self.client.uin),
+            0,
             (
                 (LoginStatus.ONLINE if self.client.online.is_set() else LoginStatus.CONNECT)
                 if not self.client._network._stop_flag
@@ -191,6 +191,8 @@ class NekoBoxAdapter(Adapter):
                 im.renew_sig_info()
 
             if self._protocol == "remote":
+                if not self._sign_url:
+                    raise ValueError("sign_url is required for remote protocol")
                 url = self._sign_url + "/appinfo"  # appinfo endpoint
                 logger.debug("load remote protocol from %s" % url)
                 rsp = await HttpCatProxies.request("GET", url)

@@ -8,7 +8,6 @@ SERVER: Optional[Server] = None
 def _set_server(server: Server):
     global SERVER
     SERVER = server
-    print(SERVER)
     return server
 
 
