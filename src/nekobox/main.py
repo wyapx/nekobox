@@ -132,6 +132,7 @@ class NekoBoxAdapter(Adapter):
         protocol: Literal["linux", "macos", "windows", "remote"] = "linux",
         log_level: str = "INFO",
         use_png: bool = False,
+        _patch_logging: bool = False,
     ):
         self.log_level = log_level.upper()
 
@@ -147,6 +148,10 @@ class NekoBoxAdapter(Adapter):
 
         self._protocol = protocol
         self._sign_url = sign_url
+
+        if _patch_logging:
+            patch_logging(self.log_level)
+
         super().__init__()
 
     client: Client
@@ -217,8 +222,6 @@ class NekoBoxAdapter(Adapter):
             async def login_get(request: Request):
                 logins = await self.get_logins()
                 return logins[0]
-
-            patch_logging(self.log_level)
 
             async with self.stage("preparing"):
                 client.connect()

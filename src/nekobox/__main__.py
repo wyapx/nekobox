@@ -31,7 +31,7 @@ def run(uin: int, host: str, port: int, token: str, path: str, protocol: str, si
     loop = it(asyncio.AbstractEventLoop)
     loop.set_exception_handler(loguru_exc_callback_async)
     server = Server(host=host, port=port, path=path, token=token, stream_threshold=4 * 1024 * 1024)
-    server.apply(NekoBoxAdapter(uin, sign_url, protocol, level, use_png))  # type: ignore
+    server.apply(NekoBoxAdapter(uin, sign_url, protocol, level, use_png, _patch_logging=True))  # type: ignore
     server.run()
 
 

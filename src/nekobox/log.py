@@ -63,6 +63,7 @@ def loguru_exc_callback_async(loop, context: dict):
 
 
 def patch_logging(level="INFO"):
+    install_loguru()
     for name in logging.root.manager.loggerDict:
         _logger = logging.getLogger(name)
         for handler in _logger.handlers:
@@ -83,6 +84,3 @@ def patch_logging(level="INFO"):
         diagnose=True,
         colorize=False,
     )
-
-
-install_loguru()
