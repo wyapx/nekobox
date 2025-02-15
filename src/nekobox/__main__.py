@@ -9,6 +9,7 @@ from typing import List, Optional, overload
 from creart import it
 from loguru import logger
 from satori.server import Server
+from lagrange import install_loguru
 
 from nekobox import __version__
 from nekobox.main import NekoBoxAdapter
@@ -28,6 +29,7 @@ bd = "\033[1m"
 
 
 def run(uin: int, host: str, port: int, token: str, path: str, protocol: str, sign_url: str, level: str, use_png: bool):
+    install_loguru()
     loop = it(asyncio.AbstractEventLoop)
     loop.set_exception_handler(loguru_exc_callback_async)
     server = Server(host=host, port=port, path=path, token=token, stream_threshold=4 * 1024 * 1024)

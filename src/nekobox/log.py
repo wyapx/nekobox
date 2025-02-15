@@ -5,7 +5,7 @@ from typing import Optional
 from types import TracebackType
 
 from loguru import logger
-from lagrange.utils.log import log, install_loguru
+from lagrange.utils.log import log
 
 
 def loguru_exc_callback(cls: type[BaseException], val: BaseException, tb: Optional[TracebackType], *_, **__):
@@ -63,7 +63,6 @@ def loguru_exc_callback_async(loop, context: dict):
 
 
 def patch_logging(level="INFO"):
-    install_loguru()
     for name in logging.root.manager.loggerDict:
         _logger = logging.getLogger(name)
         for handler in _logger.handlers:
