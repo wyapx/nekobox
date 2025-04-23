@@ -1,3 +1,4 @@
+import sys
 import shutil
 import asyncio
 import secrets
@@ -134,8 +135,8 @@ def generate_cfg(args):
 
 def _delete(args):
     if not (Path.cwd() / CONFIG_FILE).exists():
-        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件")
-        return
+        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件", file=sys.stderr)
+        sys.exit(1)
     cfg = ConfigParser()
     cfg.read(CONFIG_FILE, encoding="utf-8")
     if not args.uin or args.uin == "?":
@@ -144,8 +145,8 @@ def _delete(args):
             print(f" - {magnet}{ul}{section}{reset}")
         args.uin = input(f"{gold}请选择一个账号{reset}: ")
     if args.uin not in cfg:
-        print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在")
-        return
+        print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在", file=sys.stderr)
+        sys.exit(1)
     cfg.remove_section(args.uin)
     with (Path.cwd() / CONFIG_FILE).open("w+", encoding="utf-8") as f:
         cfg.write(f)
@@ -155,10 +156,10 @@ def _delete(args):
 def _run(args):
     if not (Path.cwd() / CONFIG_FILE).exists():
         if args.uin and args.uin != "?":
-            print(f"请先使用 {yellow}`nekobox gen {args.uin}`{reset} 生成配置文件")
+            print(f"请先使用 {yellow}`nekobox gen {args.uin}`{reset} 生成配置文件", file=sys.stderr)
         else:
-            print(f"请先使用 {yellow}`nekobox gen`{reset} 生成配置文件")
-        return
+            print(f"请先使用 {yellow}`nekobox gen`{reset} 生成配置文件", file=sys.stderr)
+        sys.exit(1)
     cfg = ConfigParser()
     cfg.read(CONFIG_FILE, encoding="utf-8")
     uin = args.uin or cfg["default"]["uin"]
@@ -173,9 +174,9 @@ def _run(args):
         )
     if uin not in cfg:
         print(
-            f"账号 {purple}{ul}{uin}{reset} 的相关配置不存在\n请先使用 {yellow}`nekobox gen {uin}`{reset} 生成对应账号的配置文件"
+            f"账号 {purple}{ul}{uin}{reset} 的相关配置不存在\n请先使用 {yellow}`nekobox gen {uin}`{reset} 生成对应账号的配置文件", file=sys.stderr
         )
-        return
+        sys.exit(1)
     host = cfg[uin]["host"]
     port = int(cfg[uin]["port"])
     token = cfg[uin]["token"]
@@ -189,8 +190,8 @@ def _run(args):
 
 def _show(args):
     if not (Path.cwd() / CONFIG_FILE).exists():
-        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件")
-        return
+        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件", file=sys.stderr)
+        sys.exit(1)
     cfg = ConfigParser()
     cfg.read(CONFIG_FILE, encoding="utf-8")
     if not args.uin or args.uin == "?":
@@ -202,8 +203,8 @@ def _show(args):
             or cfg["default"]["uin"]
         )
     if args.uin not in cfg:
-        print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在")
-        return
+        print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在", file=sys.stderr)
+        sys.exit(1)
     print(f"{green}SignUrl:        {reset}{cfg[args.uin]['sign']}")
     print(f"{green}协议类型:       {reset}{cfg[args.uin]['protocol']}")
     print(f"{green}验证 token:     {reset}{cfg[args.uin]['token']}")
@@ -236,13 +237,14 @@ def _clear(args):
                 shutil.rmtree(dir_)
                 print(f"{green}{dir_.resolve()}{reset} 数据清理完毕")
         else:
-            print(f"{green}{dir_.resolve()}{reset} 不存在")
+            print(f"{green}{dir_.resolve()}{reset} 不存在", file=sys.stderr)
+            sys.exit(1)
 
 
 def _default(args):
     if not (Path.cwd() / CONFIG_FILE).exists():
-        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件")
-        return
+        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件", file=sys.stderr)
+        sys.exit(1)
     cfg = ConfigParser()
     cfg.read(CONFIG_FILE, encoding="utf-8")
     if not args.uin or args.uin == "?":
@@ -251,8 +253,8 @@ def _default(args):
             print(f" - {magnet}{ul}{section}{reset}")
         args.uin = input(f"{gold}请选择一个账号{reset}: ")
     if args.uin not in cfg:
-        print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在")
-        return
+        print(f"账号 {purple}{ul}{args.uin}{reset} 的相关配置不存在", file=sys.stderr)
+        sys.exit(1)
     cfg.set("default", "uin", args.uin)
     with (Path.cwd() / CONFIG_FILE).open("w+", encoding="utf-8") as f:
         cfg.write(f)
@@ -261,8 +263,8 @@ def _default(args):
 
 def _list(args):
     if not (Path.cwd() / CONFIG_FILE).exists():
-        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件")
-        return
+        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件", file=sys.stderr)
+        sys.exit(1)
     cfg = ConfigParser()
     cfg.read(CONFIG_FILE, encoding="utf-8")
     print(f"{cyan}当前配置文件中的账号有:{reset}")
