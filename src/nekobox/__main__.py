@@ -263,8 +263,7 @@ def _default(args):
 
 def _list(args):
     if not (Path.cwd() / CONFIG_FILE).exists():
-        print(f"请先使用 {yellow}`nekobox gen {args.uin or ''}`{reset} 生成配置文件", file=sys.stderr)
-        sys.exit(1)
+        print(f"请先使用 {yellow}`nekobox gen`{reset} 生成配置文件", file=sys.stderr)
         return True
     cfg = ConfigParser()
     cfg.read(CONFIG_FILE, encoding="utf-8")
