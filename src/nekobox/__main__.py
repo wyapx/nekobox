@@ -111,6 +111,9 @@ def generate_cfg(args):
             )
         else:
             uin = set_cfg(cfg, "default", "uin", "Bot 的 QQ 号")
+    else:
+        cfg.add_section("default")
+        cfg.set("default", "uin", uin)
     if uin not in cfg:
         cfg.add_section(uin)
     set_cfg(cfg, uin, "sign", "Bot 的 SignUrl")
