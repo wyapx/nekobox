@@ -1,8 +1,9 @@
+import os
 import sys
 import base64
 from io import BytesIO
 from pathlib import Path
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote, unquote_to_bytes
 from typing import TYPE_CHECKING, List, Tuple, Union
 
 from yarl import URL
@@ -75,10 +76,13 @@ async def parse_resource(url: str) -> bytes:
         _, data = decode_data_url(url)
         return data
     elif url.find("file://") == 0:
-        if sys.platform == "win32":
-            path = Path(url[8:])
+        if sys.version_info >= (3, 13):
+            path = Path.from_uri(url)
         else:
-            path = Path(url[7:])
+            decoded = os.fsdecode(
+                unquote_to_bytes(url[8:] if sys.platform == "win32" else url[7:])
+            )
+            path = Path(decoded)
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path.absolute()}")
         with open(path, "rb") as f:
