@@ -10,7 +10,7 @@ dependencies = [
     "satori-python-server>=0.16.3",
     "lagrange-python>=0.1.7",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "AGPL"}
 

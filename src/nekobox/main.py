@@ -99,15 +99,15 @@ class NekoBoxAdapter(Adapter):
 
     def _get_login(self):
         return Login(
-            0,
-            (
+            sn=0,
+            status=(
                 (LoginStatus.ONLINE if self.client.online.is_set() else LoginStatus.CONNECT)
                 if not self.client._network._stop_flag
                 else LoginStatus.DISCONNECT
             ),
-            "nekobox",
-            PLATFORM,
-            User(
+            adapter="nekobox",
+            platform=PLATFORM,
+            user=User(
                 str(self.client.uin),
                 name=self.name or str(self.client.uin),
                 avatar=f"https://q1.qlogo.cn/g?b=qq&nk={self.client.uin}&s=640",
@@ -142,7 +142,7 @@ class NekoBoxAdapter(Adapter):
         self.im = InfoManager(uin, scope / "device.json", scope / "sig.bin")
         self.uin = uin
         self.name = ""
-        self.sign = sign_provider(sign_url) if sign_url else None
+        self.sign = None
         self.queue = asyncio.Queue()
         self.use_png = use_png
 
@@ -207,6 +207,13 @@ class NekoBoxAdapter(Adapter):
                 app_info = app_list[self._protocol]
             logger.info(f"AppInfo: platform={app_info.os}, ver={app_info.build_version}({app_info.sub_app_id})")
 
+            if self._sign_url:
+                self.sign = sign_provider(
+                    self._sign_url,
+                    self.uin,
+                    im.device.guid,
+                    app_info.qua,
+                )
             self.client = client = Client(
                 self.uin,
                 app_info,
