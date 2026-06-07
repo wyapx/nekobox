@@ -50,12 +50,9 @@ class NekoBoxAdapter(Adapter):
         ]
 
     async def publisher(self):
-        seq = 0
         while True:
             ev = await self.queue.get()
-            ev.id = seq
             yield ev
-            seq += 1
 
     def ensure(self, platform: str, self_id: str) -> bool:
         # upload://{platform}/{self_id}/{path}...
