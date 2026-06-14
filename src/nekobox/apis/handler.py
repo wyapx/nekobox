@@ -12,17 +12,81 @@ from satori import (
     Guild,
     Member,
     Channel,
+    Message,
     PageResult,
     ChannelType,
     MessageObject,
     transform,
 )
 
-from ..uid import resolve_uid, save_uid
+from ..uid import save_uid, resolve_uid
 from ..msgid import decode_msgid, encode_msgid
-from ..transformer import msg_to_satori, satori_to_msg
+from ..transformer import msg_to_satori, satori_to_msg, satori_to_forward_msg
 
 logger = log.patch(lambda r: r.update(name="nekobox.apis"))
+
+
+def _normalize_forward_attrs(elements) -> None:
+    for element in elements:
+        if element.type == "message" and "forward" in element.attrs:
+            element.attrs["forward"] = str(element.attrs["forward"])
+        _normalize_forward_attrs(element.children)
+
+
+def _is_forward_message(element: object) -> bool:
+    return isinstance(element, Message) and str(element.forward).lower() == "true"
+
+
+async def _send_grp_msg_segment(client: Client, elements: list, grp_id: int):
+    msg_chain = await satori_to_msg(client, elements, grp_id=grp_id)
+    if not msg_chain:
+        logger.warning("Empty message after transform, ignore")
+        return None
+    return await client.send_grp_msg(msg_chain, grp_id)
+
+
+async def _send_friend_msg_segment(client: Client, elements: list, uid: str):
+    msg_chain = await satori_to_msg(client, elements, uid=uid)
+    if not msg_chain:
+        logger.warning("Empty message after transform, ignore")
+        return None
+    return await client.send_friend_msg(msg_chain, uid)
+
+
+async def _send_grp_forward_segment(client: Client, element: Message, grp_id: int):
+    forward_msg = await satori_to_forward_msg(client, [element], grp_id=grp_id)
+    if not forward_msg:
+        logger.warning("Empty forward message after transform, ignore")
+        return None
+    if forward_msg.messages:
+        seq = await client.send_grp_forward_msg(forward_msg, grp_id)
+        if not forward_msg.resid:
+            raise RuntimeError("forward message upload finished without resid")
+    else:
+        if not forward_msg.resid:
+            logger.warning("Forward message without children or resid, ignore")
+            return None
+        seq = await client.send_grp_msg([forward_msg], grp_id)
+    element._attrs["id"] = forward_msg.resid
+    return seq
+
+
+async def _send_friend_forward_segment(client: Client, element: Message, uid: str):
+    forward_msg = await satori_to_forward_msg(client, [element], uid=uid)
+    if not forward_msg:
+        logger.warning("Empty forward message after transform, ignore")
+        return None
+    if forward_msg.messages:
+        seq = await client.send_friend_forward_msg(forward_msg, uid)
+        if not forward_msg.resid:
+            raise RuntimeError("forward message upload finished without resid")
+    else:
+        if not forward_msg.resid:
+            logger.warning("Forward message without children or resid, ignore")
+            return None
+        seq = await client.send_friend_msg([forward_msg], uid)
+    element._attrs["id"] = forward_msg.resid
+    return seq
 
 
 async def channel_list(client: Client, request: Request[route.ChannelListParam]):
@@ -39,10 +103,29 @@ async def channel_list(client: Client, request: Request[route.ChannelListParam])
 async def msg_create(client: Client, req: Request[route.MessageParam]):
     typ, uin = decode_msgid(req.params["channel_id"])
     if req.params["content"]:
-        tp = transform(parse(req.params["content"]))
+        ps = parse(req.params["content"])
+        _normalize_forward_attrs(ps)
+        tp = transform(ps)
+        rsp = []
 
         if typ == 1:
-            rsp = await client.send_grp_msg(await satori_to_msg(client, tp, grp_id=uin), uin)
+            pending = []
+            for element in tp:
+                if _is_forward_message(element):
+                    if pending:
+                        seq = await _send_grp_msg_segment(client, pending, uin)
+                        if seq is not None:
+                            rsp.append(MessageObject.from_elements(str(seq), pending))
+                        pending = []
+                    seq = await _send_grp_forward_segment(client, element, uin)
+                    if seq is not None:
+                        rsp.append(MessageObject.from_elements(str(seq), [element]))
+                else:
+                    pending.append(element)
+            if pending:
+                seq = await _send_grp_msg_segment(client, pending, uin)
+                if seq is not None:
+                    rsp.append(MessageObject.from_elements(str(seq), pending))
         elif typ == 2:
             try:
                 uid = resolve_uid(uin)
@@ -53,12 +136,26 @@ async def msg_create(client: Client, req: Request[route.MessageParam]):
                     if friend.uid:
                         save_uid(friend.uin, friend.uid)
                 uid = resolve_uid(uin)
-            rsp = await client.send_friend_msg(
-                await satori_to_msg(client, tp, uid=uid), uid
-            )
+            pending = []
+            for element in tp:
+                if _is_forward_message(element):
+                    if pending:
+                        seq = await _send_friend_msg_segment(client, pending, uid)
+                        if seq is not None:
+                            rsp.append(MessageObject.from_elements(str(seq), pending))
+                        pending = []
+                    seq = await _send_friend_forward_segment(client, element, uid)
+                    if seq is not None:
+                        rsp.append(MessageObject.from_elements(str(seq), [element]))
+                else:
+                    pending.append(element)
+            if pending:
+                seq = await _send_friend_msg_segment(client, pending, uid)
+                if seq is not None:
+                    rsp.append(MessageObject.from_elements(str(seq), pending))
         else:
             raise NotImplementedError(typ)
-        return [MessageObject.from_elements(str(rsp), tp)]
+        return rsp
     else:
         logger.warning("Empty message, ignore")
         return []
@@ -85,7 +182,7 @@ async def msg_get(client: Client, req: Request[route.MessageOpParam]):
 
     return MessageObject.from_elements(
         str(rsp),
-        await msg_to_satori(rsp.msg_chain, client.uin, gid=grp_id),
+        await msg_to_satori(rsp.msg_chain, client.uin, gid=grp_id, client=client),
         channel=Channel(encode_msgid(1, rsp.grp_id), ChannelType.TEXT, rsp.grp_name),
         user=User(str(rsp.uin), rsp.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={rsp.uin}&s=640"),
     )
@@ -103,7 +200,7 @@ async def msg_list(client: Client, req: Request[route.MessageListParam]):
     return [
         MessageObject.from_elements(
             str(r),
-            await msg_to_satori(r.msg_chain, client.uin, gid=grp_id),
+            await msg_to_satori(r.msg_chain, client.uin, gid=grp_id, client=client),
             channel=Channel(encode_msgid(1, r.grp_id), ChannelType.TEXT, r.grp_name),
             user=User(str(r.uin), r.nickname, avatar=f"https://q1.qlogo.cn/g?b=qq&nk={r.uin}&s=640"),
         )

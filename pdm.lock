@@ -533,7 +533,7 @@ version = "0.1.8"
 requires_python = ">=3.10"
 git = "https://github.com/LagrangeDev/lagrange-python"
 ref = "broken"
-revision = "458a6b15a89adb3a37ede838faefffad16265549"
+revision = "3b3a13106d25480269a0ca927cfce6485d225218"
 summary = "An Python Implementation of NTQQ PC Protocol"
 dependencies = [
     "cryptography>=46.0.7",
