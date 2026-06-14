@@ -5,6 +5,7 @@ import time
 import base64
 from io import BytesIO
 from pathlib import Path
+from html import unescape as html_unescape
 from urllib.parse import quote, unquote, unquote_to_bytes
 from typing import TYPE_CHECKING, List, Tuple, Union, Optional
 
@@ -190,6 +191,23 @@ def _multimsg_from_json_payload(payload: object) -> Optional[MulitMsg]:
     return MulitMsg(resid=str(resid), file_name=file_name)
 
 
+def _qq_avatar_url(uin: int) -> str:
+    return f"https://thirdqq.qlogo.cn/headimg_dl?dst_uin={uin}&spec=640"
+
+
+def _normalize_avatar_url(avatar: str | None, uin: int = 0) -> str:
+    if avatar:
+        url = html_unescape(avatar.strip())
+        if url.startswith("//"):
+            return "https:" + url
+        if url.startswith("http://qh.qlogo.cn/"):
+            return "https://" + url.removeprefix("http://")
+        return url
+    if uin:
+        return _qq_avatar_url(uin)
+    return ""
+
+
 async def _forward_to_satori(
     forward_msg: MulitMsg,
     self_uin: int,
@@ -202,14 +220,14 @@ async def _forward_to_satori(
         try:
             forward_msg = await client.get_forward_msg(forward_msg.resid, is_group=gid is not None)
         except Exception:
-            logger.exception("cannot fetch forward message %s", forward_msg.resid)
+            logger.exception("cannot fetch forward message {}", forward_msg.resid)
 
     nodes = []
     for node in forward_msg.messages:
         author = SatoriAuthor(
             str(node.sender_uin),
             node.sender_nick or None,
-            node.sender_avatar_url or None,
+            _normalize_avatar_url(node.sender_avatar_url, node.sender_uin) or None,
         )
         message = SatoriMessage(
             content=[
@@ -243,7 +261,7 @@ def _node_timestamp(message: SatoriMessage) -> int:
     try:
         return int(timestamp)
     except (TypeError, ValueError):
-        logger.warning("invalid forward node timestamp: %r", timestamp)
+        logger.warning("invalid forward node timestamp: {!r}", timestamp)
         return 0
 
 
@@ -255,20 +273,29 @@ async def _message_to_forward_node(
         try:
             sender_uin = int(author.id)
         except (TypeError, ValueError):
-            logger.warning("invalid forward author id: %r", author.id)
+            logger.warning("invalid forward author id: {!r}", author.id)
             sender_uin = client.uin
         sender_nick = _author_name(author)
         content = [child for child in message._children if child is not author]
     else:
         sender_uin = client.uin
-        sender_nick = str(client.uin)
+        sender_nick = ""
         content = list(message._children)
+
+    if author and author.avatar:
+        sender_avatar_url = _normalize_avatar_url(author.avatar, sender_uin)
+    elif sender_uin != client.uin:
+        sender_avatar_url = _normalize_avatar_url(None, sender_uin)
+    else:
+        sender_avatar_url = ""
+        if sender_uin == client.uin:
+            sender_nick = ""
 
     return ForwardNode(
         content=await satori_to_msg(client, content, grp_id=grp_id, uid=uid),
         sender_uin=sender_uin,
         sender_nick=sender_nick,
-        sender_avatar_url=author.avatar if author and author.avatar else "",
+        sender_avatar_url=sender_avatar_url,
         timestamp=_node_timestamp(message),
     )
 
@@ -279,10 +306,16 @@ async def _forward_to_msg(
     nodes = []
     inline_children = []
 
+    def append_node(node: ForwardNode) -> None:
+        if node.content:
+            nodes.append(node)
+        else:
+            logger.warning("ignore empty forward node from {}", node.sender_uin)
+
     async def flush_inline_children() -> None:
         if not inline_children:
             return
-        nodes.append(
+        append_node(
             await _message_to_forward_node(
                 client,
                 SatoriMessage(content=list(inline_children)),
@@ -295,10 +328,10 @@ async def _forward_to_msg(
     for child in message._children:
         if isinstance(child, SatoriMessage):
             await flush_inline_children()
-            nodes.append(await _message_to_forward_node(client, child, grp_id=grp_id, uid=uid))
+            append_node(await _message_to_forward_node(client, child, grp_id=grp_id, uid=uid))
         elif isinstance(child, SatoriCustom) and child.type == "message":
             await flush_inline_children()
-            nodes.append(
+            append_node(
                 await _message_to_forward_node(
                     client,
                     SatoriMessage(
@@ -312,7 +345,7 @@ async def _forward_to_msg(
             )
         elif isinstance(child, SatoriCustom) and child.type == "template":
             await flush_inline_children()
-            nodes.append(
+            append_node(
                 await _message_to_forward_node(
                     client,
                     SatoriMessage(content=child._children),
@@ -395,7 +428,7 @@ async def satori_to_msg(client: "Client", msgs: List[SatoriElement], *, grp_id=0
             if m.type == "template":
                 new_msg.extend(await satori_to_msg(client, m._children, grp_id=grp_id, uid=uid))
             else:
-                logger.warning("unknown message type on Custom: %s", m.type)
+                logger.warning("unknown message type on Custom: {}", m.type)
         else:
             logger.warning("cannot trans message to lag " + repr(m)[:100])
     return new_msg

@@ -4,30 +4,29 @@ import asyncio
 from io import BytesIO
 from pathlib import Path
 from contextlib import suppress
-from typing import Set, List, Literal, Optional
 from datetime import datetime, timedelta
+from typing import Set, List, Literal, Optional
 
 from loguru import logger
 from lagrange import version
 from qrcode.main import QRCode
-from satori.server import Adapter
-from lagrange.info import InfoManager
-from lagrange.info.app import AppInfo, app_list
-from lagrange.client.client import Client
-from launart import Launart, any_completed
-from satori import User, LoginStatus, Api
 from satori.model import Login
-from satori.server import Request
-from lagrange.utils.sign import sign_provider
-from lagrange.utils.audio.decoder import decode
+from lagrange.info import InfoManager
 from starlette.responses import Response
+from lagrange.client.client import Client
+from satori import Api, User, LoginStatus
+from launart import Launart, any_completed
+from satori.server import Adapter, Request
+from lagrange.utils.sign import sign_provider
+from lagrange.info.app import AppInfo, app_list
+from lagrange.utils.audio.decoder import decode
 from graia.amnesia.builtins.memcache import MemcacheService
 
-from .consts import PLATFORM, _set_server
-from .utils import HttpCatProxies, decode_audio_available, decode_audio
 from .log import patch_logging
 from .apis import apply_api_handlers
 from .events import apply_event_handler
+from .consts import PLATFORM, _set_server
+from .utils import HttpCatProxies, decode_audio, decode_audio_available
 
 
 class NekoBoxAdapter(Adapter):
@@ -42,7 +41,8 @@ class NekoBoxAdapter(Adapter):
     @staticmethod
     def proxy_urls() -> List[str]:
         return [
-            "http://thirdqq.qlogo.cn",
+            "https://thirdqq.qlogo.cn",
+            "https://qh.qlogo.cn",
             "https://p.qlogo.cn/",
             "https://q1.qlogo.cn",
             "https://gchat.qpic.cn",
@@ -71,7 +71,7 @@ class NekoBoxAdapter(Adapter):
                 raw = await HttpCatProxies.request(
                     "GET",
                     link.replace("https", "http"),  # multimedia server certificate check failure
-                    conn_timeout=15
+                    conn_timeout=15,
                 )
                 if raw.code != 200:
                     raise ConnectionError(raw.code, raw.text())
@@ -202,7 +202,9 @@ class NekoBoxAdapter(Adapter):
                 app_info = AppInfo.load_custom(rsp.json())
             else:
                 app_info = app_list[self._protocol]
-            logger.info(f"AppInfo: platform={app_info.os}, ver={app_info.build_version}({app_info.sub_app_id})")
+            logger.info(
+                f"AppInfo: platform={app_info.os}, ver={app_info.build_version}({app_info.sub_app_id})"
+            )
 
             if self._sign_url:
                 self.sign = sign_provider(
@@ -262,4 +264,3 @@ class NekoBoxAdapter(Adapter):
                 await client.stop()
 
             logger.success("Client stopped")
-
